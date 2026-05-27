@@ -1,0 +1,27 @@
+---
+# MODÈLE de coffre Ansible Vault.
+#
+# 1. Copier en vault.yml :        cp vault.example.yml vault.yml
+# 2. Renseigner de VRAIES valeurs (générer les clés JWT avec le script du repo
+#    Shaka Surf : node scripts/generate-jwt-keys.mjs <secret>).
+# 3. Chiffrer :                   ansible-vault encrypt vault.yml
+# 4. vault.yml est gitignoré : ne JAMAIS committer la version en clair.
+#
+# Aucune de ces valeurs ne doit apparaître en clair dans le dépôt.
+
+# --- PostgreSQL ---
+vault_postgres_password: "CHANGEME-mot-de-passe-postgres-fort"
+
+# --- Supabase / GoTrue / PostgREST ---
+vault_jwt_secret: "CHANGEME-secret-jwt-48-octets-minimum"
+vault_anon_key: "CHANGEME-jwt-role-anon"
+vault_service_role_key: "CHANGEME-jwt-role-service_role"
+
+# --- Chiffrement des backups (openssl enc -aes-256-cbc) ---
+vault_backup_passphrase: "CHANGEME-passphrase-chiffrement-backups"
+
+# --- Intégrations tierces (optionnelles, laisser vide si non utilisées) ---
+vault_stripe_secret_key: ""
+vault_stripe_webhook_secret: ""
+vault_brevo_api_key: ""
+vault_smsmode_api_key: ""

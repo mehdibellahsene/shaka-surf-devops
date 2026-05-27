@@ -1,0 +1,31 @@
+---
+# Variables NON sensibles, partagées par tous les groupes.
+# Les secrets sont dans vault.yml (chiffré, gitignoré). Voir vault.example.yml.
+
+# Dépôt applicatif Shaka Surf
+shaka_repo_url: "https://github.com/BMR-Consulting/Shaka-Surf.git"
+shaka_repo_version: "main"
+shaka_app_dir: "/opt/shaka-surf"
+
+# Base de données
+postgres_version: 15
+postgres_db: "postgres"
+postgres_app_user: "authenticator"
+postgres_listen_port: 5432
+
+# Réseau applicatif autorisé à joindre PostgreSQL (CIDR du VPC Terraform).
+db_allowed_cidr: "10.20.0.0/16"
+
+# Backups
+backup_dir: "/var/backups/postgres"
+backup_cron_hour: 2
+backup_cron_minute: 0
+backup_retention_days: 7
+
+# Usine logicielle
+jenkins_http_port: 8080
+sonarqube_http_port: 9000
+nexus_http_port: 8081
+
+# Utilisateur applicatif créé par le rôle common
+deploy_user: "deploy"

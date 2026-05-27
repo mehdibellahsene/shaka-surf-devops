@@ -1,0 +1,26 @@
+---
+# Scénario Molecule du rôle common (driver Docker).
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: common-instance
+    # Image Ubuntu 22.04 avec systemd, adaptée aux tests de services.
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /usr/sbin/init
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      common-instance:
+        # Docker-in-Docker n'est pas testé ici : on valide la base système.
+        # Le démon Docker est validé en intégration sur les vraies VMs.
+        install_docker: false
+verifier:
+  name: ansible

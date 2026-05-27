@@ -1,0 +1,20 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: L'utilisateur de déploiement existe
+      ansible.builtin.command: id {{ deploy_user | default('deploy') }}
+      changed_when: false
+
+    - name: fail2ban est actif
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+      check_mode: true
+      register: f2b
+      failed_when: f2b is failed
+
+    - name: Le login root SSH est désactivé
+      ansible.builtin.command: grep -E '^PermitRootLogin no' /etc/ssh/sshd_config
+      changed_when: false
