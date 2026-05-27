@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# GÉRÉ PAR ANSIBLE — rôle backup.
+# Sauvegarde PostgreSQL : pg_dump -> gzip -> chiffrement AES-256 -> S3.
+# Credentials S3 fournis par l'instance-profile IAM de la VM (aucune clé en dur).
+set -euo pipefail
+
+DB_NAME="{{ postgres_db }}"
+BACKUP_DIR="{{ backup_dir }}"
+BUCKET="{{ backup_s3_bucket }}"
+REGION="{{ aws_region }}"
+PASS_FILE="/etc/postgres-backup.pass"
+TS="$(date +%Y-%m-%d_%H%M%S)"
+FILE="${BACKUP_DIR}/${DB_NAME}_${TS}.sql.gz.enc"
+
+# Dump compressé puis chiffré symétriquement.
+sudo -u postgres pg_dump "${DB_NAME}" \
+  | gzip \
+  | openssl enc -aes-256-cbc -salt -pbkdf2 -pass "file:${PASS_FILE}" -out "${FILE}"
+
+# Envoi vers S3 (préfixe postgres/ couvert par le lifecycle de rétention).
+aws s3 cp "${FILE}" "s3://${BUCKET}/postgres/$(basename "${FILE}")" --region "${REGION}"
+
+# Purge locale immédiate (la rétention vit dans S3 via le lifecycle).
+rm -f "${FILE}"
+
+echo "[$(date -Is)] Backup ${DB_NAME} envoyé vers s3://${BUCKET}/postgres/"

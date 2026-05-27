@@ -1,0 +1,59 @@
+---
+- name: Installer Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Calculer le domaine sslip.io du load balancer
+  ansible.builtin.set_fact:
+    lb_domain: "{{ lb_public_ip | replace('.', '-') }}.sslip.io"
+
+- name: Déposer le vhost reverse-proxy
+  ansible.builtin.template:
+    src: shaka.conf.j2
+    dest: /etc/nginx/sites-available/shaka.conf
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Activer le vhost
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/shaka.conf
+    dest: /etc/nginx/sites-enabled/shaka.conf
+    state: link
+  notify: Reload nginx
+
+- name: Désactiver le vhost par défaut
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Tester la configuration Nginx
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Démarrer et activer Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+# ---- TLS Let's Encrypt (sslip.io) ----
+- name: Installer certbot et le plugin nginx
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+  when: lb_enable_tls | bool
+
+- name: Obtenir / renouveler le certificat Let's Encrypt
+  ansible.builtin.command:
+    cmd: >-
+      certbot --nginx --non-interactive --agree-tos
+      -m {{ letsencrypt_email }}
+      -d {{ lb_domain }}
+    creates: "/etc/letsencrypt/live/{{ lb_domain }}/fullchain.pem"
+  when: lb_enable_tls | bool
+  notify: Reload nginx

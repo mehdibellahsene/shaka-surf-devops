@@ -1,0 +1,26 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Le script de backup est présent et exécutable
+      ansible.builtin.stat:
+        path: /usr/local/bin/pg_backup.sh
+      register: bscript
+      failed_when: not bscript.stat.exists or not bscript.stat.xusr
+
+    - name: Le script de restauration est présent et exécutable
+      ansible.builtin.stat:
+        path: /usr/local/bin/pg_restore.sh
+      register: rscript
+      failed_when: not rscript.stat.exists or not rscript.stat.xusr
+
+    - name: L'entrée cron du backup quotidien existe
+      ansible.builtin.command: crontab -l
+      register: crontab_out
+      changed_when: false
+      failed_when: "'pg_backup.sh' not in crontab_out.stdout"
+
+    - name: La syntaxe Bash du script de backup est valide
+      ansible.builtin.command: bash -n /usr/local/bin/pg_backup.sh
+      changed_when: false

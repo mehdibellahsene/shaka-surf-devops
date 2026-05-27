@@ -1,0 +1,11 @@
+---
+# IPs privées des VMs App (chaîne CSV fournie par l'inventaire Terraform).
+app_backends: ""
+# Port applicatif exposé par les VMs App (frontend Next.js publié sur :80).
+app_backend_port: 80
+# Domaine public (sslip.io dérivé de l'IP du LB). Renseigné par site.yml.
+lb_public_ip: "127.0.0.1"
+# Activer l'obtention d'un certificat Let's Encrypt via certbot.
+lb_enable_tls: true
+# Email pour l'enregistrement Let's Encrypt.
+letsencrypt_email: "admin@example.com"

@@ -1,0 +1,50 @@
+---
+- name: Installer les outils de backup (AWS CLI, openssl, gzip)
+  ansible.builtin.apt:
+    name:
+      - awscli
+      - openssl
+      - gzip
+    state: present
+    update_cache: true
+
+- name: Créer le répertoire de backups local
+  ansible.builtin.file:
+    path: "{{ backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"
+
+- name: Déposer la passphrase de chiffrement (lecture root uniquement)
+  ansible.builtin.copy:
+    content: "{{ vault_backup_passphrase }}"
+    dest: /etc/postgres-backup.pass
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Déposer le script de backup
+  ansible.builtin.template:
+    src: pg_backup.sh.j2
+    dest: /usr/local/bin/pg_backup.sh
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Déposer le script de restauration (utilisé par restore.yml)
+  ansible.builtin.template:
+    src: pg_restore.sh.j2
+    dest: /usr/local/bin/pg_restore.sh
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Planifier le backup quotidien
+  ansible.builtin.cron:
+    name: "postgres-backup-s3"
+    hour: "{{ backup_cron_hour }}"
+    minute: "{{ backup_cron_minute }}"
+    job: "/usr/local/bin/pg_backup.sh >> /var/log/pg_backup.log 2>&1"
+    user: root
+  when: backup_install_cron | bool

@@ -1,0 +1,23 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: backup-instance
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /usr/sbin/init
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      backup-instance:
+        backup_s3_bucket: "molecule-test-bucket"
+        vault_backup_passphrase: "molecule-passphrase"
+verifier:
+  name: ansible

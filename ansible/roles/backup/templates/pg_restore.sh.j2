@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# GÉRÉ PAR ANSIBLE — rôle backup.
+# Restauration : récupère le DERNIER dump depuis S3 -> déchiffre -> gunzip ->
+# psql restore. Invoqué par le playbook restore.yml.
+set -euo pipefail
+
+DB_NAME="{{ postgres_db }}"
+BACKUP_DIR="{{ backup_dir }}"
+BUCKET="{{ backup_s3_bucket }}"
+REGION="{{ aws_region }}"
+PASS_FILE="/etc/postgres-backup.pass"
+
+# Dernier objet sous postgres/ (tri lexical = chronologique grâce à l'horodatage).
+LATEST="$(aws s3 ls "s3://${BUCKET}/postgres/" --region "${REGION}" \
+  | sort | tail -n 1 | awk '{print $4}')"
+
+if [[ -z "${LATEST}" ]]; then
+  echo "Aucun backup trouvé dans s3://${BUCKET}/postgres/" >&2
+  exit 1
+fi
+
+echo "Restauration depuis ${LATEST}"
+LOCAL="${BACKUP_DIR}/${LATEST}"
+aws s3 cp "s3://${BUCKET}/postgres/${LATEST}" "${LOCAL}" --region "${REGION}"
+
+openssl enc -d -aes-256-cbc -pbkdf2 -pass "file:${PASS_FILE}" -in "${LOCAL}" \
+  | gunzip \
+  | sudo -u postgres psql "${DB_NAME}"
+
+rm -f "${LOCAL}"
+echo "[$(date -Is)] Restauration de ${DB_NAME} terminée depuis ${LATEST}"

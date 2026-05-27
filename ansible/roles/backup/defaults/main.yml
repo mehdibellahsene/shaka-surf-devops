@@ -1,0 +1,11 @@
+---
+backup_dir: "/var/backups/postgres"
+postgres_db: "postgres"
+backup_cron_hour: 2
+backup_cron_minute: 0
+backup_retention_days: 7
+# Nom du bucket S3 (fourni par l'inventaire Terraform) et région.
+backup_s3_bucket: ""
+aws_region: "eu-west-3"
+# Installer un cron (mis à false sous Molecule).
+backup_install_cron: true

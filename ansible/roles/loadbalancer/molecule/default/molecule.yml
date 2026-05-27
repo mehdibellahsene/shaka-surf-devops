@@ -1,0 +1,25 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: lb-instance
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /usr/sbin/init
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      lb-instance:
+        # Pas de DNS public en CI : on teste Nginx + le vhost, pas certbot.
+        lb_enable_tls: false
+        lb_public_ip: "203.0.113.10"
+        app_backends: "10.20.0.11,10.20.0.12"
+verifier:
+  name: ansible
