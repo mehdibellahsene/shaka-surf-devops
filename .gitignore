@@ -1,0 +1,44 @@
+# ===== Terraform =====
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+# Variable files may contain secrets — only the *.example is tracked
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ===== Ansible =====
+# Generated inventory (rendered from Terraform outputs)
+ansible/inventory/hosts.ini
+*.retry
+# Decrypted/working vault — only vault.example.yml is tracked
+ansible/group_vars/all/vault.yml
+.vault_pass
+.vault_pass.txt
+
+# ===== Secrets / keys =====
+*.pem
+*.key
+*.p12
+.env
+.env.*
+!.env.example
+
+# ===== Molecule =====
+.molecule/
+molecule/*/.molecule/
+
+# ===== Misc =====
+__pycache__/
+*.pyc
+.DS_Store
+*.log
