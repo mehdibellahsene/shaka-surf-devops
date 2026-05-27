@@ -1,0 +1,59 @@
+---
+# Playbook principal : configure toute l'infrastructure.
+# Inventaire généré par Terraform (ansible/inventory/hosts.ini).
+# Secrets chargés automatiquement depuis group_vars/all/vault.yml (chiffré).
+
+# Domaine public du load balancer (sslip.io), réutilisé par les apps.
+- name: Calculer les variables dérivées
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Domaine sslip.io du load balancer
+      ansible.builtin.set_fact:
+        lb_domain: "{{ lb_public_ip | replace('.', '-') }}.sslip.io"
+      run_once: true
+
+# --- Base système partout ---
+- name: Base commune (paquets, Docker, durcissement)
+  hosts: all
+  become: true
+  roles:
+    - common
+
+# --- Base de données + backups ---
+- name: Base de données et sauvegardes
+  hosts: db
+  become: true
+  roles:
+    - database
+    - backup
+
+# --- Applications ---
+- name: Déploiement applicatif
+  hosts: app
+  become: true
+  vars:
+    public_site_url: "https://{{ hostvars[groups['loadbalancer'][0]]['lb_public_ip'] | default(lb_public_ip) | replace('.', '-') }}.sslip.io"
+  roles:
+    - app
+
+# --- Load balancer (après les apps : il a besoin de leurs upstreams) ---
+- name: Load balancer
+  hosts: loadbalancer
+  become: true
+  roles:
+    - loadbalancer
+
+# --- Usine logicielle (bonus) ---
+- name: Usine logicielle
+  hosts: citools
+  become: true
+  vars:
+    citools_ip_dash: "{{ ansible_host | replace('.', '-') }}"
+    jenkins_domain: "jenkins-{{ ansible_host | replace('.', '-') }}.sslip.io"
+    sonarqube_domain: "sonar-{{ ansible_host | replace('.', '-') }}.sslip.io"
+    nexus_domain: "nexus-{{ ansible_host | replace('.', '-') }}.sslip.io"
+  roles:
+    - jenkins
+    - sonarqube
+    - nexus

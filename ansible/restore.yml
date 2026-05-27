@@ -1,0 +1,32 @@
+---
+# Playbook de restauration — INDÉPENDANT du playbook principal.
+# Récupère le dernier backup depuis S3 et le restaure sur la VM base de données.
+#
+# Usage :
+#   ansible-playbook restore.yml --ask-vault-pass
+#
+# Pré-requis : le rôle backup a déjà déposé /usr/local/bin/pg_restore.sh et
+# la passphrase /etc/postgres-backup.pass (exécuter site.yml au moins une fois).
+
+- name: Restaurer PostgreSQL depuis le dernier backup S3
+  hosts: db
+  become: true
+  tasks:
+    - name: Vérifier la présence du script de restauration
+      ansible.builtin.stat:
+        path: /usr/local/bin/pg_restore.sh
+      register: restore_script
+
+    - name: Échouer si le rôle backup n'a pas été appliqué
+      ansible.builtin.fail:
+        msg: "pg_restore.sh introuvable — exécuter d'abord site.yml (rôle backup)."
+      when: not restore_script.stat.exists
+
+    - name: Exécuter la restauration depuis S3
+      ansible.builtin.command: /usr/local/bin/pg_restore.sh
+      register: restore_out
+      changed_when: true
+
+    - name: Afficher le résultat
+      ansible.builtin.debug:
+        var: restore_out.stdout_lines
