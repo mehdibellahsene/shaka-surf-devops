@@ -1,0 +1,32 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ../../../../requirements.yml
+driver:
+  name: docker
+platforms:
+  - name: app-instance
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /usr/sbin/init
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      app-instance:
+        # On valide le RENDU des templates (compose + .env) sans démarrer
+        # la stack : un docker-in-docker complet Supabase serait trop lourd ici.
+        app_compose_up: false
+        db_host: "10.20.0.50"
+        public_site_url: "https://1-2-3-4.sslip.io"
+        vault_postgres_password: "molecule-pw"
+        vault_jwt_secret: "molecule-jwt-secret"
+        vault_anon_key: "molecule-anon"
+        vault_service_role_key: "molecule-service"
+verifier:
+  name: ansible

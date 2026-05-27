@@ -1,0 +1,48 @@
+---
+- name: Installer git
+  ansible.builtin.apt:
+    name: git
+    state: present
+    update_cache: true
+
+- name: Cloner / mettre à jour le dépôt Shaka Surf
+  ansible.builtin.git:
+    repo: "{{ shaka_repo_url }}"
+    dest: "{{ shaka_app_dir }}"
+    version: "{{ shaka_repo_version }}"
+    force: true
+  notify: Recreate compose stack
+
+- name: Déposer le fichier d'environnement (.env) depuis le Vault
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ shaka_app_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+  notify: Recreate compose stack
+
+- name: Déposer le docker-compose applicatif (sans le service db)
+  ansible.builtin.template:
+    src: docker-compose.app.yml.j2
+    dest: "{{ shaka_app_dir }}/docker-compose.app.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+  notify: Recreate compose stack
+
+- name: Valider la syntaxe du fichier compose
+  ansible.builtin.command:
+    cmd: docker compose -f docker-compose.app.yml --env-file .env config
+    chdir: "{{ shaka_app_dir }}"
+  changed_when: false
+  when: app_compose_up | bool
+
+- name: Démarrer la stack applicative
+  community.docker.docker_compose_v2:
+    project_src: "{{ shaka_app_dir }}"
+    files:
+      - docker-compose.app.yml
+    state: present
+    build: always
+  when: app_compose_up | bool

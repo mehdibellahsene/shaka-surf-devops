@@ -1,0 +1,28 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    shaka_app_dir: "/opt/shaka-surf"
+  tasks:
+    - name: Le fichier compose applicatif a été rendu
+      ansible.builtin.stat:
+        path: "{{ shaka_app_dir }}/docker-compose.app.yml"
+      register: compose_file
+      failed_when: not compose_file.stat.exists
+
+    - name: Le compose ne contient PAS de service db (déporté sur la VM dédiée)
+      ansible.builtin.command: grep -E '^\s{2}db:' {{ shaka_app_dir }}/docker-compose.app.yml
+      register: db_service
+      changed_when: false
+      failed_when: db_service.rc == 0
+
+    - name: Le compose pointe vers la base externe (DB_HOST)
+      ansible.builtin.command: grep -q 'DB_HOST}:5432' {{ shaka_app_dir }}/docker-compose.app.yml
+      changed_when: false
+
+    - name: Le fichier .env a été rendu avec les permissions restreintes
+      ansible.builtin.stat:
+        path: "{{ shaka_app_dir }}/.env"
+      register: env_file
+      failed_when: not env_file.stat.exists or env_file.stat.mode != '0600'

@@ -1,0 +1,17 @@
+---
+shaka_repo_url: "https://github.com/BMR-Consulting/Shaka-Surf.git"
+shaka_repo_version: "main"
+shaka_app_dir: "/opt/shaka-surf"
+deploy_user: "deploy"
+
+# Hôte PostgreSQL : IP privée de la VM base de données (injectée par l'inventaire
+# Terraform via la variable d'inventaire db_host).
+db_host: "127.0.0.1"
+postgres_db: "postgres"
+
+# URL publique de l'application (domaine sslip.io du load balancer).
+public_site_url: "https://localhost"
+
+# Démarrer réellement la stack Docker. Mis à false sous Molecule (où l'on valide
+# le rendu des templates sans docker-in-docker).
+app_compose_up: true

@@ -1,0 +1,124 @@
+# GÉRÉ PAR ANSIBLE — rôle app.
+# Dérivé du docker-compose.yml de Shaka Surf, SANS le service `db` :
+# PostgreSQL tourne sur la VM base de données dédiée ({{ db_host }}).
+# Seules les couches applicatives tournent sur chaque VM App.
+
+services:
+
+  mailer-templates:
+    image: nginx:alpine
+    volumes:
+      - ./email-templates:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  # AUTH — GoTrue. Pointe vers la base externe (VM DB dédiée).
+  auth:
+    image: supabase/gotrue:v2.158.1
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@${DB_HOST}:5432/${POSTGRES_DB}
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9999/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  # REST — PostgREST. Base externe.
+  rest:
+    image: postgrest/postgrest:v12.2.0
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@${DB_HOST}:5432/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    restart: unless-stopped
+
+  # API GATEWAY — Kong (route /auth, /rest)
+  kong:
+    image: kong:2.8.1
+    ports:
+      - "8000:8000"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    volumes:
+      - ./volumes/api/kong.yml:/var/lib/kong/kong.yml:ro
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    restart: unless-stopped
+
+  # BACKEND — Fastify (détient les secrets)
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    environment:
+      NODE_ENV: production
+      BACKEND_PORT: "9940"
+      JWT_SECRET: ${JWT_SECRET}
+      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_INTERNAL_URL: http://kong:8000
+      SITE_URL: ${SITE_URL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      SMSMODE_API_KEY: ${SMSMODE_API_KEY:-}
+    depends_on:
+      kong:
+        condition: service_started
+    restart: unless-stopped
+
+  # FRONTEND — Next.js. Exposé en HTTP sur :80, le load balancer termine le TLS.
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: prod
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL}
+        SUPABASE_URL: http://kong:8000
+    ports:
+      # Publié sur le port 80 de la VM App : seul le Security Group du LB y accède.
+      - "80:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL}
+      SUPABASE_URL: http://kong:8000
+      BACKEND_INTERNAL_URL: http://backend:9940
+      NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      backend:
+        condition: service_started
+      kong:
+        condition: service_started
+    restart: unless-stopped
