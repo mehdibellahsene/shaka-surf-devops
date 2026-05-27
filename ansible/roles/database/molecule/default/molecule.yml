@@ -18,6 +18,8 @@ platforms:
       - "0.0.0.0:5432:5432/tcp"
 provisioner:
   name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/../"
   inventory:
     host_vars:
       db-instance:

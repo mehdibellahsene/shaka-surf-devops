@@ -37,6 +37,9 @@ ansible/group_vars/all/vault.yml
 .molecule/
 molecule/*/.molecule/
 
+# ===== Démo locale (non versionnée) =====
+.demo/
+
 # ===== Misc =====
 __pycache__/
 *.pyc
