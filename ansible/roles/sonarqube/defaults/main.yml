@@ -1,0 +1,9 @@
+---
+sonarqube_http_port: 9000
+sonarqube_dir: "/opt/sonarqube"
+sonarqube_db_password: "sonar"
+sonarqube_domain: "sonar.localhost"
+citools_enable_tls: true
+letsencrypt_email: "admin@example.com"
+# Démarrer réellement la stack (false sous Molecule).
+sonarqube_deploy: true

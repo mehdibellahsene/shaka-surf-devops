@@ -1,0 +1,62 @@
+---
+- name: Installer Java (prérequis Jenkins) et Nginx
+  ansible.builtin.apt:
+    name:
+      - openjdk-17-jre-headless
+      - nginx
+    state: present
+    update_cache: true
+
+- name: Ajouter la clé GPG du dépôt Jenkins
+  ansible.builtin.get_url:
+    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    dest: /usr/share/keyrings/jenkins-keyring.asc
+    mode: "0644"
+
+- name: Ajouter le dépôt Jenkins
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+    state: present
+    filename: jenkins
+
+- name: Installer Jenkins
+  ansible.builtin.apt:
+    name: jenkins
+    state: present
+    update_cache: true
+
+- name: Configurer le port HTTP de Jenkins
+  ansible.builtin.lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^HTTP_PORT='
+    line: "HTTP_PORT={{ jenkins_http_port }}"
+  notify: Restart jenkins
+
+- name: Démarrer et activer Jenkins
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: true
+
+- name: Déposer le vhost Nginx Jenkins (HTTPS via certbot)
+  ansible.builtin.template:
+    src: jenkins-nginx.conf.j2
+    dest: /etc/nginx/sites-available/jenkins.conf
+    mode: "0644"
+  notify: Reload nginx citools
+
+- name: Activer le vhost Jenkins
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/jenkins.conf
+    dest: /etc/nginx/sites-enabled/jenkins.conf
+    state: link
+  notify: Reload nginx citools
+
+- name: Obtenir le certificat Let's Encrypt Jenkins
+  ansible.builtin.command:
+    cmd: >-
+      certbot --nginx --non-interactive --agree-tos
+      -m {{ letsencrypt_email }} -d {{ jenkins_domain }}
+    creates: "/etc/letsencrypt/live/{{ jenkins_domain }}/fullchain.pem"
+  when: citools_enable_tls | bool
+  notify: Reload nginx citools

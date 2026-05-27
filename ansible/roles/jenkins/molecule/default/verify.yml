@@ -1,0 +1,26 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Jenkins est actif
+      ansible.builtin.service:
+        name: jenkins
+        state: started
+      check_mode: true
+      register: jk
+      failed_when: jk is failed
+
+    - name: Le port 8080 (Jenkins) est en écoute
+      ansible.builtin.wait_for:
+        port: 8080
+        host: 127.0.0.1
+        timeout: 90
+
+    - name: Nginx est actif (reverse-proxy)
+      ansible.builtin.service:
+        name: nginx
+        state: started
+      check_mode: true
+      register: ng
+      failed_when: ng is failed

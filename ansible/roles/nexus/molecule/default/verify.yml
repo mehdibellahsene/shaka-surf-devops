@@ -1,0 +1,24 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    nexus_dir: "/opt/nexus"
+  tasks:
+    - name: Le docker-compose Nexus a été rendu
+      ansible.builtin.stat:
+        path: "{{ nexus_dir }}/docker-compose.yml"
+      register: compose
+      failed_when: not compose.stat.exists
+
+    - name: Le vhost Nexus expose le bon port amont
+      ansible.builtin.command: grep -q '127.0.0.1:8081' /etc/nginx/sites-available/nexus.conf
+      changed_when: false
+
+    - name: Nginx est actif (reverse-proxy)
+      ansible.builtin.service:
+        name: nginx
+        state: started
+      check_mode: true
+      register: ng
+      failed_when: ng is failed

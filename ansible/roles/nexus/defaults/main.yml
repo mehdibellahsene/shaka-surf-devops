@@ -1,0 +1,8 @@
+---
+nexus_http_port: 8081
+nexus_dir: "/opt/nexus"
+nexus_domain: "nexus.localhost"
+citools_enable_tls: true
+letsencrypt_email: "admin@example.com"
+# Démarrer réellement la stack (false sous Molecule).
+nexus_deploy: true

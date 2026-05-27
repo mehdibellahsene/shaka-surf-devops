@@ -1,0 +1,60 @@
+---
+- name: Régler vm.max_map_count (requis par Elasticsearch embarqué de SonarQube)
+  ansible.posix.sysctl:
+    name: vm.max_map_count
+    value: "524288"
+    state: present
+    reload: true
+
+- name: Installer Nginx (reverse-proxy HTTPS)
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Créer le répertoire SonarQube
+  ansible.builtin.file:
+    path: "{{ sonarqube_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Déposer le docker-compose SonarQube (+ PostgreSQL dédié)
+  ansible.builtin.template:
+    src: docker-compose.sonar.yml.j2
+    dest: "{{ sonarqube_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Démarrer SonarQube
+  community.docker.docker_compose_v2:
+    project_src: "{{ sonarqube_dir }}"
+    state: present
+  when: sonarqube_deploy | bool
+
+- name: Déposer le vhost Nginx SonarQube
+  ansible.builtin.template:
+    src: sonar-nginx.conf.j2
+    dest: /etc/nginx/sites-available/sonar.conf
+    mode: "0644"
+  notify: Reload nginx citools
+
+- name: Activer le vhost SonarQube
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/sonar.conf
+    dest: /etc/nginx/sites-enabled/sonar.conf
+    state: link
+  notify: Reload nginx citools
+
+- name: Démarrer et activer Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Obtenir le certificat Let's Encrypt SonarQube
+  ansible.builtin.command:
+    cmd: >-
+      certbot --nginx --non-interactive --agree-tos
+      -m {{ letsencrypt_email }} -d {{ sonarqube_domain }}
+    creates: "/etc/letsencrypt/live/{{ sonarqube_domain }}/fullchain.pem"
+  when: citools_enable_tls | bool
+  notify: Reload nginx citools

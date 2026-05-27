@@ -1,0 +1,12 @@
+# GÉRÉ PAR ANSIBLE — rôle nexus.
+services:
+  nexus:
+    image: sonatype/nexus3:latest
+    ports:
+      - "{{ nexus_http_port }}:8081"
+    volumes:
+      - nexus-data:/nexus-data
+    restart: unless-stopped
+
+volumes:
+  nexus-data:

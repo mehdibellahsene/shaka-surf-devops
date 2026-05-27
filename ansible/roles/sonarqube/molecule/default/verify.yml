@@ -1,0 +1,26 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    sonarqube_dir: "/opt/sonarqube"
+  tasks:
+    - name: vm.max_map_count est relevé pour Elasticsearch
+      ansible.builtin.command: sysctl -n vm.max_map_count
+      register: vmm
+      changed_when: false
+      failed_when: vmm.stdout | int < 262144
+
+    - name: Le docker-compose SonarQube a été rendu
+      ansible.builtin.stat:
+        path: "{{ sonarqube_dir }}/docker-compose.yml"
+      register: compose
+      failed_when: not compose.stat.exists
+
+    - name: Nginx est actif (reverse-proxy)
+      ansible.builtin.service:
+        name: nginx
+        state: started
+      check_mode: true
+      register: ng
+      failed_when: ng is failed

@@ -1,0 +1,53 @@
+---
+- name: Installer Nginx (reverse-proxy HTTPS)
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Créer le répertoire Nexus
+  ansible.builtin.file:
+    path: "{{ nexus_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Déposer le docker-compose Nexus
+  ansible.builtin.template:
+    src: docker-compose.nexus.yml.j2
+    dest: "{{ nexus_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Démarrer Nexus
+  community.docker.docker_compose_v2:
+    project_src: "{{ nexus_dir }}"
+    state: present
+  when: nexus_deploy | bool
+
+- name: Déposer le vhost Nginx Nexus
+  ansible.builtin.template:
+    src: nexus-nginx.conf.j2
+    dest: /etc/nginx/sites-available/nexus.conf
+    mode: "0644"
+  notify: Reload nginx citools
+
+- name: Activer le vhost Nexus
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/nexus.conf
+    dest: /etc/nginx/sites-enabled/nexus.conf
+    state: link
+  notify: Reload nginx citools
+
+- name: Démarrer et activer Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Obtenir le certificat Let's Encrypt Nexus
+  ansible.builtin.command:
+    cmd: >-
+      certbot --nginx --non-interactive --agree-tos
+      -m {{ letsencrypt_email }} -d {{ nexus_domain }}
+    creates: "/etc/letsencrypt/live/{{ nexus_domain }}/fullchain.pem"
+  when: citools_enable_tls | bool
+  notify: Reload nginx citools

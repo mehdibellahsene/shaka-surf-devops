@@ -1,0 +1,6 @@
+---
+jenkins_http_port: 8080
+# Domaine HTTPS (sous-domaine sslip.io). Renseigné par site.yml.
+jenkins_domain: "jenkins.localhost"
+citools_enable_tls: true
+letsencrypt_email: "admin@example.com"
