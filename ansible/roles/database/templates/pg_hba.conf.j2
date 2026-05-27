@@ -1,0 +1,12 @@
+# GÉRÉ PAR ANSIBLE — rôle database
+# Accès local + réseau applicatif uniquement. Le Security Group AWS limite déjà
+# le port 5432 au SG des applications ; pg_hba ajoute une seconde barrière.
+
+# TYPE  DATABASE  USER      ADDRESS              METHOD
+local   all       postgres                       peer
+local   all       all                            scram-sha-256
+host    all       all       127.0.0.1/32         scram-sha-256
+host    all       all       ::1/128              scram-sha-256
+
+# Connexions chiffrées depuis le réseau applicatif (VPC) uniquement.
+host    all       all       {{ db_allowed_cidr }}   scram-sha-256

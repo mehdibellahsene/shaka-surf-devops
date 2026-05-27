@@ -1,0 +1,26 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: PostgreSQL est actif
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+      check_mode: true
+      register: pg
+      failed_when: pg is failed
+
+    - name: Le port 5432 est en écoute
+      ansible.builtin.wait_for:
+        port: 5432
+        host: 127.0.0.1
+        timeout: 10
+
+    - name: Connexion à la base et vérification des rôles Supabase
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        db: postgres
+        query: "SELECT rolname FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role','authenticator');"
+      register: roles_check
+      failed_when: roles_check.rowcount < 4

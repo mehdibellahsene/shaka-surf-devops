@@ -1,0 +1,96 @@
+---
+- name: Installer les prérequis APT
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - git
+      - acl
+      - python3-psycopg2
+    state: present
+    update_cache: true
+
+- name: Ajouter la clé GPG du dépôt PostgreSQL (PGDG)
+  ansible.builtin.apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: Ajouter le dépôt PGDG
+  ansible.builtin.apt_repository:
+    repo: "deb https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    state: present
+
+- name: Installer PostgreSQL {{ postgres_version }}
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ postgres_version }}"
+      - "postgresql-client-{{ postgres_version }}"
+    state: present
+    update_cache: true
+
+- name: Écouter sur toutes les interfaces (accès restreint par pg_hba + SG)
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ postgres_version }}/main/postgresql.conf"
+    regexp: "^#?listen_addresses"
+    line: "listen_addresses = '*'"
+  notify: Restart postgresql
+
+- name: Configurer pg_hba.conf (accès restreint au réseau applicatif)
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "/etc/postgresql/{{ postgres_version }}/main/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: "0640"
+  notify: Restart postgresql
+
+- name: Démarrer et activer PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Définir le mot de passe du superutilisateur postgres
+  community.postgresql.postgresql_user:
+    name: postgres
+    password: "{{ vault_postgres_password }}"
+  become: true
+  become_user: postgres
+
+- name: Cloner le dépôt Shaka Surf pour les scripts d'init SQL
+  ansible.builtin.git:
+    repo: "{{ shaka_repo_url }}"
+    dest: "{{ db_repo_dir }}"
+    version: "{{ shaka_repo_version }}"
+    depth: 1
+    force: true
+
+- name: Lister les scripts d'init Supabase (ordre alphabétique)
+  ansible.builtin.find:
+    paths: "{{ db_repo_dir }}/volumes/db/init"
+    patterns: "*.sql"
+  register: init_scripts
+
+- name: Garde-fou d'idempotence — marqueur d'init déjà appliquée
+  ansible.builtin.stat:
+    path: /var/lib/postgresql/.shaka_init_done
+  register: init_marker
+
+- name: Appliquer les scripts d'init Supabase (roles, schemas, RLS)
+  community.postgresql.postgresql_script:
+    db: "{{ postgres_db }}"
+    path: "{{ item.path }}"
+  become: true
+  become_user: postgres
+  loop: "{{ init_scripts.files | sort(attribute='path') }}"
+  when: not init_marker.stat.exists
+
+- name: Poser le marqueur d'init
+  ansible.builtin.file:
+    path: /var/lib/postgresql/.shaka_init_done
+    state: touch
+    owner: postgres
+    group: postgres
+    mode: "0644"
+  when: not init_marker.stat.exists

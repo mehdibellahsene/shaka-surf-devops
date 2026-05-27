@@ -1,0 +1,27 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ../../../../requirements.yml
+driver:
+  name: docker
+platforms:
+  - name: db-instance
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /usr/sbin/init
+    privileged: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    pre_build_image: true
+    published_ports:
+      - "0.0.0.0:5432:5432/tcp"
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      db-instance:
+        vault_postgres_password: "molecule-test-pw"
+        db_allowed_cidr: "172.16.0.0/12"
+verifier:
+  name: ansible

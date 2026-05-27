@@ -1,0 +1,9 @@
+---
+postgres_version: 15
+postgres_db: "postgres"
+postgres_listen_port: 5432
+db_allowed_cidr: "10.20.0.0/16"
+shaka_repo_url: "https://github.com/BMR-Consulting/Shaka-Surf.git"
+shaka_repo_version: "main"
+# Répertoire où le dépôt est cloné pour récupérer les scripts d'init SQL.
+db_repo_dir: "/opt/shaka-surf-db"
