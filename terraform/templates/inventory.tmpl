@@ -1,0 +1,31 @@
+# Inventaire Ansible — GÉNÉRÉ par Terraform (ne pas éditer à la main).
+# Régénéré à chaque `terraform apply`.
+
+[loadbalancer]
+${lb_name} ansible_host=${lb_public_ip}
+
+[app]
+%{ for app in apps ~}
+${app.name} ansible_host=${app.public_ip} app_private_ip=${app.private_ip}
+%{ endfor ~}
+
+[db]
+${db_name} ansible_host=${db_public_ip} db_private_ip=${db_private_ip}
+
+%{ if citools_public_ip != "" ~}
+[citools]
+${citools_name} ansible_host=${citools_public_ip}
+%{ endif ~}
+
+[all:vars]
+ansible_user=${ssh_user}
+ansible_python_interpreter=/usr/bin/python3
+# Backups
+backup_s3_bucket=${backup_bucket}
+aws_region=${aws_region}
+# Adresse privée de la base, consommée par le rôle app (connexion PostgreSQL)
+db_host=${db_private_ip}
+# IPs privées des apps, consommées par le rôle loadbalancer (upstreams Nginx)
+app_backends=${app_backends}
+# Domaine public du load balancer (Let's Encrypt via sslip.io)
+lb_public_ip=${lb_public_ip}
