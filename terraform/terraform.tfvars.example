@@ -1,0 +1,20 @@
+# Copier en terraform.tfvars (gitignoré) puis adapter.
+# Aucune valeur secrète ici : seuls des identifiants de ressources.
+
+region   = "eu-west-3"
+project  = "shaka-surf"
+
+# Nombre de VMs applicatives (>= 2)
+app_count = 2
+
+# Provisionner l'usine logicielle (bonus) ?
+enable_citools = true
+
+# Paire de clés EC2 EXISTANTE dans la région ci-dessus.
+ssh_key_name = "ma-cle-ec2"
+
+# Optionnel : créer la paire de clés depuis une clé publique locale.
+# ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+
+# IMPORTANT : restreindre l'accès SSH à votre IP publique (https://ifconfig.me) en /32.
+admin_cidr = "203.0.113.10/32"
