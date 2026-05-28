@@ -88,8 +88,8 @@
   register: init_marker
 
 # Appliqué en tant qu'utilisateur applicatif (via 127.0.0.1) : les tables
-# spots/bookings appartiennent ainsi à {{ postgres_app_user }}, pas au superutilisateur.
-- name: Appliquer le script d'init (tables spots/bookings + seed, SQL idempotent)
+# lessons/enrollments appartiennent ainsi à {{ postgres_app_user }}, pas au superutilisateur.
+- name: Appliquer le script d'init (tables lessons/enrollments + seed, SQL idempotent)
   community.postgresql.postgresql_script:
     db: "{{ postgres_db }}"
     path: "{{ database_init_sql_dest }}"

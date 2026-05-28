@@ -17,12 +17,12 @@
         host: 127.0.0.1
         timeout: 10
 
-    - name: Le seed du mock est appliqué (au moins un spot, via l'utilisateur applicatif)
+    - name: Le seed du mock est appliqué (au moins un cours, via l'utilisateur applicatif)
       community.postgresql.postgresql_query:
         db: shakasurf
         login_host: 127.0.0.1
         login_user: shaka
         login_password: "{{ vault_postgres_password }}"
-        query: "SELECT count(*) AS nb FROM spots;"
-      register: spots_check
-      failed_when: (spots_check.query_result[0].nb | int) < 1
+        query: "SELECT count(*) AS nb FROM lessons;"
+      register: lessons_check
+      failed_when: (lessons_check.query_result[0].nb | int) < 1

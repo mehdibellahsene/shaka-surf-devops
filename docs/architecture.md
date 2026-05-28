@@ -44,7 +44,7 @@ par le rôle Ansible `app` dans `/opt/shaka-surf`) :
 | Conteneur | Image / techno | Port | Rôle |
 |-----------|--------------------|-----------------|------|
 | `web` | nginx:alpine | 80 (depuis LB) | Sert le frontend statique (`app/frontend/`) et proxifie `/api/` vers l'API |
-| `api` | Node 20 (Express + pg) | 9940 (interne) | API métier (`/api/whoami`, `/api/health`, `/api/spots`, `/api/bookings`), connectée à PostgreSQL sur la VM DB |
+| `api` | Node 20 (Express + pg) | 9940 (interne) | API métier (`/api/whoami`, `/api/health`, `/api/dashboard`, `/api/lessons`, `/api/enrollments`), connectée à PostgreSQL sur la VM DB |
 
 Le load balancer ne parle qu'au port 80 (`web`) des VMs App ; seul le conteneur
 `api` connaît la base de données. Le schéma et le seed (`app/db/init.sql`) sont

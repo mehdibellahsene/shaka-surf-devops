@@ -3,14 +3,15 @@
 Infrastructure **complète, automatisée et reproductible** : **Terraform**
 (provisionnement AWS), **Ansible** (configuration par rôles, inventaire généré)
 et **Molecule** (un scénario de test par rôle) déploient un **mock de
-l'application Shaka Surf** — un petit site de réservation de spots de surf,
+l'application Shaka Surf** — [shaka-surf.fr](https://shaka-surf.fr), la plateforme
+de gestion pour écoles de surf (tableau de bord, planning, inscriptions),
 versionné dans ce dépôt (`app/`).
 
 > Projet DevOps — EFREI 4e année. Le sujet laisse le **choix des technologies
 > applicatives** libre : l'évaluation porte sur l'infrastructure. Nous avons donc
-> remplacé l'application réelle par un mock minimal mais réaliste (frontend +
-> API + PostgreSQL), ce qui rend tout le pipeline testable de bout en bout.
-> Aucune ressource n'est créée manuellement : tout est en code.
+> mocké l'application réelle Shaka Surf par une version minimale mais réaliste
+> (frontend + API + PostgreSQL), ce qui rend tout le pipeline testable de bout en
+> bout. Aucune ressource n'est créée manuellement : tout est en code.
 
 ---
 
@@ -32,7 +33,7 @@ démarrage : acceptez l'avertissement du navigateur).
 | Ce que vous pouvez tester | Comment | Ce qu'on observe |
 |---------------------------|---------|------------------|
 | **Round-robin** du load balancer | Bouton « 10 requêtes » dans l'interface | Les réponses alternent entre `app-1` et `app-2` |
-| **Persistance** des données | Créer une réservation, recharger la page | La réservation reste (PostgreSQL) |
+| **Persistance** des données | Inscrire un élève, recharger la page | L'inscription reste et le tableau de bord se met à jour (PostgreSQL) |
 | **Panne de la base** | `docker compose stop db` (puis `docker compose start db`) | Bandeau « mode dégradé » — l'application ne crashe pas |
 | **Backup chiffré vers S3** | `docker compose exec backup backup` | Un objet `.sql.gz.enc` apparaît dans le bucket |
 | **Console S3 (MinIO)** | http://localhost:9001 — login `demo` / `demodemo123` | Le bucket `shaka-surf-backups` et ses objets datés |
@@ -84,15 +85,19 @@ Chaque VM applicative exécute **deux conteneurs** via `docker compose`
 - **`api`** — API Node 20 (Express + pg) sur le port 9940, connectée à la VM
   PostgreSQL (`app/backend/`).
 
-Le schéma et le jeu de données (6 spots de surf français ) sont dans
-`app/db/init.sql`, **idempotent** (rejouable sans effet de bord).
+Le mock reproduit [shaka-surf.fr](https://shaka-surf.fr), la plateforme de
+gestion pour écoles de surf : tableau de bord (chiffre d'affaires, élèves, taux
+de remplissage), planning des cours et inscriptions d'élèves. Le schéma et le
+jeu de données (6 cours + inscriptions de démo) sont dans `app/db/init.sql`,
+**idempotent** (rejouable sans effet de bord).
 
 | Endpoint | Méthode | Description |
 |----------|---------|-------------|
 | `/api/whoami` | GET | Nom de l'instance qui répond — rend le round-robin visible |
 | `/api/health` | GET | `ok` / `degraded` + état de la base (`db: up/down`) — ne crashe jamais si la DB tombe |
-| `/api/spots` | GET | Liste des spots de surf |
-| `/api/bookings` | GET / POST | Réservations (avec nom du spot) / création (`201`) |
+| `/api/dashboard` | GET | Métriques calculées en direct depuis PostgreSQL (CA, élèves, remplissage) |
+| `/api/lessons` | GET | Catalogue des cours (le planning) |
+| `/api/enrollments` | GET / POST | Inscriptions (avec le titre du cours) / création (`201`) |
 
 **Pourquoi un mock ?** Le sujet précise que les technologies applicatives sont
 libres : ce qui est évalué, c'est l'infrastructure. Le mock est versionné dans
@@ -220,7 +225,7 @@ done
 | Paramètre | Valeur | Justification |
 |---------------|--------|---------------|
 | **Quoi** | `pg_dump` de la base `shakasurf` | Dump logique portable (schéma + données), restaurable sur n'importe quelle instance PostgreSQL 15. |
-| **Quand** | Quotidien à 02:00 (cron) | Trafic faible la nuit ; RPO ≤ 24 h, suffisant pour une application de réservation au volume modéré, sans surcoût de stockage/CPU. |
+| **Quand** | Quotidien à 02:00 (cron) | Trafic faible la nuit ; RPO ≤ 24 h, suffisant pour une plateforme de gestion au volume modéré, sans surcoût de stockage/CPU. |
 | **Traitement**| gzip + chiffrement AES-256 (openssl, passphrase Vault) | Compression pour réduire le coût S3 ; chiffrement pour la confidentialité au transit et au repos. |
 | **Où** | `s3://<bucket>/postgres/shakasurf_AAAA-MM-JJ_HHMMSS.sql.gz.enc` | Bucket dédié, versioning + SSE activés, accès public bloqué. |
 | **Rétention** | 7 sauvegardes quotidiennes (lifecycle S3) | Couvre une semaine de récupération ; au-delà, suppression automatique pour maîtriser les coûts. Purge locale immédiate après upload. |
@@ -318,7 +323,7 @@ shaka-surf-devops/
 ├── app/ # application mock (versionnée dans le dépôt)
 │ ├── backend/ # API Node 20 — Express + pg (Dockerfile)
 │ ├── frontend/ # frontend statique vanilla servi par nginx (Dockerfile)
-│ ├── db/init.sql # schéma + seed idempotents (6 spots )
+│ ├── db/init.sql # schéma + seed idempotents (6 cours + inscriptions)
 │ └── docker-compose.yml # compose PAR VM applicative (utilisé par Ansible)
 ├── demo/ # briques propres à la démo locale
 │ ├── lb/ # nginx + certificat auto-signé (≙ VM Load Balancer)
@@ -343,18 +348,3 @@ shaka-surf-devops/
             # chaque rôle : tasks/ defaults/ handlers/ templates/
             # molecule/default/{molecule,converge,verify}.yml
 ```
-
----
-
-## 10. Limites connues
-
-- **L'application réelle est volontairement mockée** : le sujet laisse les
-  technologies applicatives libres et évalue l'infrastructure. Le mock (`app/`)
-  conserve les propriétés structurantes (état en PostgreSQL, instances
-  identiques derrière un LB, mode dégradé) tout en restant minimal et lisible.
-- `terraform apply` nécessite des credentials AWS (coûts à votre charge).
-- Le nœud de contrôle doit être sous Linux/WSL/macOS pour Ansible/Molecule —
-  la **démo locale**, elle, tourne partout où Docker Desktop tourne (Windows inclus).
-- Le déploiement AWS réel n'a pas été exécuté ici (pas de compte cloud fourni) ;
-  le code est écrit pour être appliqué tel quel, et la démo locale reproduit
-  l'architecture 1:1.

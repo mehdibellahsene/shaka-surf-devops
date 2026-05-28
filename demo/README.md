@@ -77,11 +77,12 @@ Sur la page, cliquez sur le bouton **« 10 requêtes »** : les réponses
 alternent entre `app-1` et `app-2`. C'est le round-robin Nginx qui répartit la
 charge entre les deux VMs applicatives, comme dans l'architecture du sujet.
 
-### Étape 3 — Réservation persistée
+### Étape 3 — Inscription persistée
 
-Réservez un spot (Hossegor, Nazaré ...) via le formulaire, puis rechargez la
-page : la réservation est toujours là. Elle est stockée dans PostgreSQL, sur la
-"VM" base de données — pas dans le conteneur applicatif.
+Inscrivez un élève sur un cours via le formulaire, puis rechargez la page :
+l'inscription est toujours là et le tableau de bord s'est mis à jour. Elle est
+stockée dans PostgreSQL, sur la "VM" base de données — pas dans le conteneur
+applicatif.
 
 ### Étape 4 — Panne de la base de données
 
@@ -120,14 +121,14 @@ fuyait.
 
 Pour prouver que la sauvegarde n'est pas décorative :
 
-1. ajoutez une **nouvelle** réservation *après* la sauvegarde de l'étape 5 ;
+1. ajoutez une **nouvelle** inscription *après* la sauvegarde de l'étape 5 ;
 2. restaurez la sauvegarde la plus récente :
 
    ```bash
    docker compose exec backup restore
    ```
 
-3. rechargez la page : la réservation post-sauvegarde a disparu, la base est
+3. rechargez la page : l'inscription post-sauvegarde a disparu, la base est
    revenue **exactement** à l'état sauvegardé.
 
 ---

@@ -1,29 +1,52 @@
--- Schéma et données de démo du mock Shaka Surf (projet DevOps EFREI).
--- Script IDEMPOTENT : rejouable autant de fois que nécessaire sans erreur
--- (CREATE TABLE IF NOT EXISTS, INSERT ... ON CONFLICT DO NOTHING).
+-- Schema et donnees de demo de Shaka Surf, la plateforme de gestion pour
+-- ecoles de surf (projet DevOps EFREI).
+-- Script IDEMPOTENT : rejouable sans erreur (CREATE TABLE IF NOT EXISTS,
+-- INSERT ... ON CONFLICT DO NOTHING).
 
-CREATE TABLE IF NOT EXISTS spots (
-    id          int PRIMARY KEY,
-    name        text,
-    level       text,
-    wave_height text,
-    emoji       text
+-- Cours proposes par l'ecole (le planning du moniteur).
+CREATE TABLE IF NOT EXISTS lessons (
+    id         int PRIMARY KEY,
+    title      text NOT NULL,
+    level      text,
+    instructor text,
+    price_eur  int,
+    capacity   int
 );
 
-CREATE TABLE IF NOT EXISTS bookings (
-    id         serial PRIMARY KEY,
-    name       text NOT NULL,
-    spot_id    int REFERENCES spots(id),
-    booked_for date,
-    created_at timestamptz DEFAULT now()
+-- Inscriptions d'eleves sur un cours (genere le chiffre d'affaires).
+CREATE TABLE IF NOT EXISTS enrollments (
+    id            serial PRIMARY KEY,
+    student       text NOT NULL,
+    lesson_id     int REFERENCES lessons(id),
+    scheduled_for date,
+    created_at    timestamptz DEFAULT now()
 );
 
--- Jeu de données : 6 spots, ids fixes pour garantir l'idempotence.
-INSERT INTO spots (id, name, level, wave_height, emoji) VALUES
-    (1, 'Hossegor',                    'Confirmé',      '1,5 - 3 m',   '🏆'),
-    (2, 'Biarritz - Côte des Basques', 'Débutant',      '0,5 - 1 m',   '🏄'),
-    (3, 'Lacanau',                     'Intermédiaire', '1 - 2 m',     '☀️'),
-    (4, 'La Torche',                   'Intermédiaire', '1 - 2,5 m',   '🌬️'),
-    (5, 'Anglet',                      'Débutant',      '0,5 - 1,5 m', '🐚'),
-    (6, 'Nazaré',                      'Légende',       '10 - 30 m',   '🌊')
+-- Catalogue de cours, ids fixes pour garantir l'idempotence.
+INSERT INTO lessons (id, title, level, instructor, price_eur, capacity) VALUES
+    (1, 'Initiation - cours collectif', 'Debutant',      'Lea Moreau',    45,  8),
+    (2, 'Perfectionnement vague',       'Intermediaire', 'Tom Riviere',   60,  6),
+    (3, 'Coaching competition',         'Confirme',      'Noa Castera',   90,  4),
+    (4, 'Cours enfants - ecume',        'Debutant',      'Maya Dubois',   35, 10),
+    (5, 'Stage week-end',               'Intermediaire', 'Hugo Lefevre', 150, 12),
+    (6, 'Cours prive',                  'Tous niveaux',  'Ines Bonnet',   80,  1)
 ON CONFLICT (id) DO NOTHING;
+
+-- Inscriptions de demo, ids fixes : alimentent le tableau de bord des
+-- l'ouverture (chiffre d'affaires, eleves, taux de remplissage).
+INSERT INTO enrollments (id, student, lesson_id, scheduled_for) VALUES
+    (1,  'Kelly Slater',    1, '2026-06-02'),
+    (2,  'Justine Dupont',  5, '2026-06-06'),
+    (3,  'Jeremy Flores',   3, '2026-06-07'),
+    (4,  'Pauline Ado',     2, '2026-06-09'),
+    (5,  'Joan Duru',       5, '2026-06-13'),
+    (6,  'Maxime Huscenot', 2, '2026-06-14'),
+    (7,  'Tessa Thyssen',   4, '2026-06-16'),
+    (8,  'Marco Mignot',    1, '2026-06-18'),
+    (9,  'Vahine Fierro',   3, '2026-06-20'),
+    (10, 'Michel Bourez',   6, '2026-06-21')
+ON CONFLICT (id) DO NOTHING;
+
+-- La sequence du serial doit suivre les ids inseres manuellement.
+SELECT setval(pg_get_serial_sequence('enrollments', 'id'),
+              (SELECT COALESCE(MAX(id), 1) FROM enrollments));

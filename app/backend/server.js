@@ -1,7 +1,7 @@
-// Backend mock Shaka Surf — projet DevOps EFREI.
+// Backend Shaka Surf — plateforme de gestion pour ecoles de surf (projet DevOps EFREI).
 // API minimaliste : Express + PostgreSQL (pg), rien d'autre.
-// Toutes les variables d'environnement ont une valeur par défaut :
-// l'application démarre sans aucun fichier .env.
+// Toutes les variables d'environnement ont une valeur par defaut :
+// l'application demarre sans aucun fichier .env.
 
 const os = require('os');
 const express = require('express');
@@ -10,19 +10,19 @@ const { Pool } = require('pg');
 const PORT = parseInt(process.env.PORT || '9940', 10);
 const INSTANCE_NAME = process.env.INSTANCE_NAME || os.hostname();
 
-// Pool de connexions PostgreSQL. Le timeout court permet à /api/health
-// de répondre rapidement même quand la base est injoignable.
+// Pool de connexions PostgreSQL. Le timeout court permet a /api/health
+// de repondre rapidement meme quand la base est injoignable.
 const pool = new Pool({
   host: process.env.DB_HOST || 'db',
   port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME || 'shakasurf',
   user: process.env.DB_USER || 'shaka',
-  password: process.env.DB_PASSWORD || 'shaka', // défaut du mock — en prod : .env templaté depuis Ansible Vault
+  password: process.env.DB_PASSWORD || 'shaka', // defaut du mock — en prod : .env template depuis Ansible Vault
   connectionTimeoutMillis: 2000,
 });
 
 // Indispensable : sans ce handler, la perte d'une connexion inactive
-// (ex. redémarrage de PostgreSQL) ferait crasher le process Node.
+// (ex. redemarrage de PostgreSQL) ferait crasher le process Node.
 pool.on('error', (err) => {
   console.error('[pool pg] connexion perdue :', err.message);
 });
@@ -30,24 +30,24 @@ pool.on('error', (err) => {
 const app = express();
 app.use(express.json());
 
-// Erreur "métier" (donnée invalide, spot inexistant…) vs base injoignable.
+// Erreur "metier" (donnee invalide, cours inexistant…) vs base injoignable.
 function estErreurDonnees(err) {
-  // Classes SQLSTATE 22 (donnée invalide) et 23 (violation de contrainte).
+  // Classes SQLSTATE 22 (donnee invalide) et 23 (violation de contrainte).
   return typeof err.code === 'string' && (err.code.startsWith('22') || err.code.startsWith('23'));
 }
 
-// Réponse 503 homogène quand la base de données ne répond pas.
+// Reponse 503 homogene quand la base de donnees ne repond pas.
 function repondreDbInjoignable(res, err) {
   console.error('[db] erreur :', err.message);
-  res.status(503).json({ error: 'base de données injoignable' });
+  res.status(503).json({ error: 'base de donnees injoignable' });
 }
 
-// Identité de l'instance — sert à visualiser le round-robin du load balancer.
+// Identite de l'instance — sert a visualiser le round-robin du load balancer.
 app.get('/api/whoami', (_req, res) => {
   res.json({ instance: INSTANCE_NAME });
 });
 
-// Santé de la chaîne : teste la base avec un SELECT 1, sans jamais crasher.
+// Sante de la chaine : teste la base avec un SELECT 1, sans jamais crasher.
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -57,11 +57,36 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-// Liste des spots de surf (données chargées par db/init.sql).
-app.get('/api/spots', async (_req, res) => {
+// Tableau de bord : metriques calculees en direct depuis PostgreSQL.
+app.get('/api/dashboard', async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, name, level, wave_height, emoji FROM spots ORDER BY id'
+      `SELECT
+         (SELECT COALESCE(SUM(l.price_eur), 0)
+            FROM enrollments e JOIN lessons l ON l.id = e.lesson_id) AS revenue_eur,
+         (SELECT COUNT(*) FROM enrollments)                          AS students,
+         (SELECT COUNT(*) FROM lessons)                              AS lessons,
+         (SELECT COALESCE(SUM(capacity), 0) FROM lessons)            AS capacity_total`
+    );
+    const d = rows[0];
+    const capacity = parseInt(d.capacity_total, 10) || 0;
+    const students = parseInt(d.students, 10) || 0;
+    res.json({
+      revenue_eur: parseInt(d.revenue_eur, 10),
+      students,
+      lessons: parseInt(d.lessons, 10),
+      fill_rate: capacity ? Math.round((students / capacity) * 100) : 0,
+    });
+  } catch (err) {
+    repondreDbInjoignable(res, err);
+  }
+});
+
+// Planning : cours proposes par l'ecole (donnees chargees par db/init.sql).
+app.get('/api/lessons', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, title, level, instructor, price_eur, capacity FROM lessons ORDER BY id'
     );
     res.json(rows);
   } catch (err) {
@@ -69,19 +94,19 @@ app.get('/api/spots', async (_req, res) => {
   }
 });
 
-// Liste des réservations, avec le nom du spot joint pour l'affichage.
-app.get('/api/bookings', async (_req, res) => {
+// Inscriptions, avec le titre du cours joint pour l'affichage.
+app.get('/api/enrollments', async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT b.id,
-              b.name,
-              to_char(b.booked_for, 'YYYY-MM-DD') AS booked_for,
-              b.created_at,
-              s.name  AS spot_name,
-              s.emoji AS spot_emoji
-         FROM bookings b
-         LEFT JOIN spots s ON s.id = b.spot_id
-        ORDER BY b.created_at DESC
+      `SELECT e.id,
+              e.student,
+              to_char(e.scheduled_for, 'YYYY-MM-DD') AS scheduled_for,
+              e.created_at,
+              l.title       AS lesson_title,
+              l.instructor  AS lesson_instructor
+         FROM enrollments e
+         LEFT JOIN lessons l ON l.id = e.lesson_id
+        ORDER BY e.created_at DESC
         LIMIT 50`
     );
     res.json(rows);
@@ -90,28 +115,28 @@ app.get('/api/bookings', async (_req, res) => {
   }
 });
 
-// Création d'une réservation : { name, spot_id, booked_for }.
-app.post('/api/bookings', async (req, res) => {
-  const { name, spot_id, booked_for } = req.body || {};
-  if (!name || !spot_id) {
-    return res.status(400).json({ error: 'champs requis : name, spot_id' });
+// Creation d'une inscription : { student, lesson_id, scheduled_for }.
+app.post('/api/enrollments', async (req, res) => {
+  const { student, lesson_id, scheduled_for } = req.body || {};
+  if (!student || !lesson_id) {
+    return res.status(400).json({ error: 'champs requis : student, lesson_id' });
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO bookings (name, spot_id, booked_for)
+      `INSERT INTO enrollments (student, lesson_id, scheduled_for)
        VALUES ($1, $2, $3)
-       RETURNING id, name, spot_id, to_char(booked_for, 'YYYY-MM-DD') AS booked_for`,
-      [name, spot_id, booked_for || null]
+       RETURNING id, student, lesson_id, to_char(scheduled_for, 'YYYY-MM-DD') AS scheduled_for`,
+      [student, lesson_id, scheduled_for || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
     if (estErreurDonnees(err)) {
-      return res.status(400).json({ error: 'données invalides (spot inconnu ou date incorrecte)' });
+      return res.status(400).json({ error: 'donnees invalides (cours inconnu ou date incorrecte)' });
     }
     repondreDbInjoignable(res, err);
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend Shaka Surf (mock) — instance ${INSTANCE_NAME} — port ${PORT}`);
+  console.log(`Backend Shaka Surf — instance ${INSTANCE_NAME} — port ${PORT}`);
 });

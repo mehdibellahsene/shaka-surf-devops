@@ -55,9 +55,17 @@ body {
 }
 
 .slogan {
-  margin: 0.4rem 0 0.9rem;
-  opacity: 0.85;
+  margin: 0.4rem 0 0.2rem;
+  opacity: 0.92;
   font-style: italic;
+  font-size: 1.05rem;
+}
+
+.sous-slogan {
+  margin: 0 auto 0.9rem;
+  max-width: 620px;
+  opacity: 0.8;
+  font-size: 0.92rem;
 }
 
 .badge-instance {
@@ -223,29 +231,63 @@ main {
   transition: width 0.25s ease;
 }
 
-/* ----- Spots ----- */
-.grille-spots {
+/* ----- Tableau de bord ----- */
+.metriques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+.metrique {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: linear-gradient(180deg, white, var(--ecume));
+  border: 1px solid #e3eef3;
+  border-radius: var(--rayon);
+  padding: 1rem 1.1rem;
+}
+
+.metrique-valeur {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--ocean);
+}
+
+.metrique-label {
+  font-size: 0.85rem;
+  color: #5d7482;
+  font-weight: 600;
+}
+
+/* ----- Planning des cours ----- */
+.grille-cours {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 0.9rem;
 }
 
-.carte-spot {
+.carte-cours {
   border: 1px solid #e3eef3;
   border-radius: var(--rayon);
   padding: 0.9rem 1rem;
   background: linear-gradient(180deg, white, var(--ecume));
 }
 
-.carte-spot .emoji-spot { font-size: 1.6rem; }
-
-.carte-spot h3 {
-  margin: 0.3rem 0 0.5rem;
+.carte-cours h3 {
+  margin: 0 0 0.3rem;
   font-size: 1.05rem;
   color: var(--ocean-fonce);
 }
 
-.carte-spot .infos {
+.carte-cours .moniteur {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: #5d7482;
+}
+
+.carte-cours .infos {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -260,17 +302,18 @@ main {
   color: #6b4f17;
 }
 
-.etiquette.vague-haut { background: #d8f0fa; color: var(--ocean-fonce); }
+.etiquette.prix { background: #d8f0fa; color: var(--ocean-fonce); }
+.etiquette.places { background: #e3f7ec; color: #14613c; }
 
-/* ----- Réservations ----- */
-.form-resa {
+/* ----- Inscriptions ----- */
+.form-inscription {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 0.8rem;
   align-items: end;
 }
 
-.form-resa label {
+.form-inscription label {
   display: grid;
   gap: 0.3rem;
   font-size: 0.85rem;
@@ -278,8 +321,8 @@ main {
   color: var(--ocean-fonce);
 }
 
-.form-resa input,
-.form-resa select {
+.form-inscription input,
+.form-inscription select {
   border: 1px solid #cfe0e8;
   border-radius: 8px;
   padding: 0.5rem 0.6rem;
@@ -288,8 +331,8 @@ main {
   background: white;
 }
 
-.form-resa input:focus,
-.form-resa select:focus {
+.form-inscription input:focus,
+.form-inscription select:focus {
   outline: 2px solid var(--ocean-clair);
   border-color: var(--ocean);
 }
@@ -305,7 +348,7 @@ main {
 .message.ok { background: #e3f7ec; color: #14613c; }
 .message.erreur { background: #fde8e8; color: #8f1d27; }
 
-.liste-resa {
+.liste-inscriptions {
   list-style: none;
   margin: 0.4rem 0 0;
   padding: 0;
@@ -313,7 +356,7 @@ main {
   gap: 0.4rem;
 }
 
-.liste-resa li {
+.liste-inscriptions li {
   background: var(--ecume);
   border-radius: 8px;
   padding: 0.5rem 0.8rem;

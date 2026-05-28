@@ -1,10 +1,10 @@
-// Frontend mock Shaka Surf — vanilla JS, sans framework ni CDN (tout offline).
-// Toutes les requêtes passent par /api/ : nginx les proxifie vers le backend.
+// Frontend Shaka Surf — vanilla JS, sans framework ni CDN (tout offline).
+// Toutes les requetes passent par /api/ : nginx les proxifie vers le backend.
 
 const $ = (selecteur) => document.querySelector(selecteur);
 
 /* ------------------------------------------------------------------ */
-/* 1. Badge "Servi par app-X" (identité de l'instance backend)        */
+/* 1. Badge "Servi par app-X" (identite de l'instance backend)        */
 /* ------------------------------------------------------------------ */
 
 async function chargerInstance() {
@@ -19,7 +19,27 @@ async function chargerInstance() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. Santé de la chaîne Frontend -> Backend -> PostgreSQL            */
+/* 2. Tableau de bord (metriques calculees depuis PostgreSQL)         */
+/* ------------------------------------------------------------------ */
+
+async function chargerDashboard() {
+  const revenu = $('#metrique-revenu');
+  const eleves = $('#metrique-eleves');
+  const remplissage = $('#metrique-remplissage');
+  try {
+    const reponse = await fetch('/api/dashboard', { cache: 'no-store' });
+    if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
+    const d = await reponse.json();
+    revenu.textContent = `${d.revenue_eur.toLocaleString('fr-FR')} €`;
+    eleves.textContent = d.students;
+    remplissage.textContent = `${d.fill_rate} %`;
+  } catch {
+    revenu.textContent = eleves.textContent = remplissage.textContent = '—';
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Sante de la chaine Frontend -> Backend -> PostgreSQL            */
 /* ------------------------------------------------------------------ */
 
 function setPastille(element, etat) {
@@ -39,7 +59,7 @@ async function chargerSante() {
     setPastille(pastilleDb, dbUp ? 'verte' : 'rouge');
     bandeau.classList.toggle('cache', dbUp);
   } catch {
-    // Backend injoignable : tout est rouge derrière le frontend.
+    // Backend injoignable : tout est rouge derriere le frontend.
     setPastille(pastilleBack, 'rouge');
     setPastille(pastilleDb, 'rouge');
     bandeau.classList.remove('cache');
@@ -47,14 +67,14 @@ async function chargerSante() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 3. Visualiseur de load balancing (10 requêtes séquentielles)       */
+/* 4. Visualiseur de load balancing (10 requetes sequentielles)       */
 /* ------------------------------------------------------------------ */
 
 async function envoyerDixRequetes() {
   const bouton = $('#btn-dix-requetes');
   const conteneur = $('#barres-lb');
   bouton.disabled = true;
-  const compteur = {}; // { nomInstance: nombre de réponses }
+  const compteur = {}; // { nomInstance: nombre de reponses }
   for (let i = 0; i < 10; i++) {
     try {
       const reponse = await fetch('/api/whoami', { cache: 'no-store' });
@@ -63,7 +83,7 @@ async function envoyerDixRequetes() {
     } catch {
       compteur['(erreur)'] = (compteur['(erreur)'] || 0) + 1;
     }
-    dessinerBarres(conteneur, compteur); // mise à jour en direct, requête après requête
+    dessinerBarres(conteneur, compteur); // mise a jour en direct, requete apres requete
   }
   bouton.disabled = false;
 }
@@ -92,61 +112,65 @@ function dessinerBarres(conteneur, compteur) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Spots de surf (cartes + alimentation du select du formulaire)   */
+/* 5. Planning des cours (cartes + alimentation du select)            */
 /* ------------------------------------------------------------------ */
 
-async function chargerSpots() {
-  const conteneur = $('#liste-spots');
-  const select = $('#resa-spot');
+async function chargerCours() {
+  const conteneur = $('#liste-cours');
+  const select = $('#insc-cours');
   try {
-    const reponse = await fetch('/api/spots');
+    const reponse = await fetch('/api/lessons');
     if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
-    const spots = await reponse.json();
+    const cours = await reponse.json();
 
     conteneur.innerHTML = '';
-    select.length = 1; // on garde uniquement l'option "— choisis un spot —"
+    select.length = 1; // on garde uniquement l'option "— choisis un cours —"
 
-    for (const spot of spots) {
-      // Carte du spot (construction DOM : pas d'injection HTML).
+    for (const c of cours) {
+      // Carte du cours (construction DOM : pas d'injection HTML).
       const carte = document.createElement('article');
-      carte.className = 'carte-spot';
-
-      const emoji = document.createElement('span');
-      emoji.className = 'emoji-spot';
-      emoji.textContent = spot.emoji || '🏄';
+      carte.className = 'carte-cours';
 
       const titre = document.createElement('h3');
-      titre.textContent = spot.name;
+      titre.textContent = c.title;
+
+      const moniteur = document.createElement('p');
+      moniteur.className = 'moniteur';
+      moniteur.textContent = `Moniteur : ${c.instructor}`;
 
       const infos = document.createElement('div');
       infos.className = 'infos';
 
       const niveau = document.createElement('span');
       niveau.className = 'etiquette';
-      niveau.textContent = `Niveau : ${spot.level}`;
+      niveau.textContent = c.level;
 
-      const vagues = document.createElement('span');
-      vagues.className = 'etiquette vague-haut';
-      vagues.textContent = `Vagues : ${spot.wave_height}`;
+      const prix = document.createElement('span');
+      prix.className = 'etiquette prix';
+      prix.textContent = `${c.price_eur} €`;
 
-      infos.append(niveau, vagues);
-      carte.append(emoji, titre, infos);
+      const places = document.createElement('span');
+      places.className = 'etiquette places';
+      places.textContent = `${c.capacity} places`;
+
+      infos.append(niveau, prix, places);
+      carte.append(titre, moniteur, infos);
       conteneur.appendChild(carte);
 
-      // Option correspondante dans le formulaire de réservation.
+      // Option correspondante dans le formulaire d'inscription.
       const option = document.createElement('option');
-      option.value = spot.id;
-      option.textContent = `${spot.emoji || ''} ${spot.name}`.trim();
+      option.value = c.id;
+      option.textContent = `${c.title} — ${c.price_eur} €`;
       select.appendChild(option);
     }
   } catch {
     conteneur.innerHTML =
-      '<p class="note erreur">Spots indisponibles (base de données injoignable).</p>';
+      '<p class="note erreur">Planning indisponible (base de donnees injoignable).</p>';
   }
 }
 
 /* ------------------------------------------------------------------ */
-/* 5. Réservations (liste + formulaire)                               */
+/* 6. Inscriptions (liste + formulaire)                               */
 /* ------------------------------------------------------------------ */
 
 function formaterDateFr(aaaaMmJj) {
@@ -156,60 +180,61 @@ function formaterDateFr(aaaaMmJj) {
   return `${jour}/${mois}/${annee}`;
 }
 
-async function chargerReservations() {
-  const liste = $('#liste-resa');
+async function chargerInscriptions() {
+  const liste = $('#liste-inscriptions');
   try {
-    const reponse = await fetch('/api/bookings');
+    const reponse = await fetch('/api/enrollments');
     if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
-    const reservations = await reponse.json();
+    const inscriptions = await reponse.json();
 
     liste.innerHTML = '';
-    if (reservations.length === 0) {
+    if (inscriptions.length === 0) {
       const vide = document.createElement('li');
       vide.className = 'note';
-      vide.textContent = "Aucune réservation pour l'instant — à toi la première vague !";
+      vide.textContent = "Aucune inscription pour l'instant.";
       liste.appendChild(vide);
       return;
     }
-    for (const resa of reservations) {
+    for (const insc of inscriptions) {
       const li = document.createElement('li');
-      li.textContent = `${resa.spot_emoji || '🏄'} ${resa.name} — ${
-        resa.spot_name || 'spot inconnu'
-      } — ${formaterDateFr(resa.booked_for)}`;
+      li.textContent = `${insc.student} — ${insc.lesson_title || 'cours inconnu'} — ${formaterDateFr(
+        insc.scheduled_for
+      )}`;
       liste.appendChild(li);
     }
   } catch {
     liste.innerHTML =
-      '<li class="note erreur">Réservations indisponibles (base de données injoignable).</li>';
+      '<li class="note erreur">Inscriptions indisponibles (base de donnees injoignable).</li>';
   }
 }
 
 function afficherMessage(texte, type) {
   // type : 'ok' | 'erreur'
-  const message = $('#message-resa');
+  const message = $('#message-inscription');
   message.textContent = texte;
   message.className = `message ${type}`;
 }
 
-async function soumettreReservation(evenement) {
+async function soumettreInscription(evenement) {
   evenement.preventDefault();
   const corps = {
-    name: $('#resa-nom').value.trim(),
-    spot_id: parseInt($('#resa-spot').value, 10),
-    booked_for: $('#resa-date').value,
+    student: $('#insc-eleve').value.trim(),
+    lesson_id: parseInt($('#insc-cours').value, 10),
+    scheduled_for: $('#insc-date').value,
   };
   try {
-    const reponse = await fetch('/api/bookings', {
+    const reponse = await fetch('/api/enrollments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(corps),
     });
     if (reponse.status === 201) {
-      afficherMessage('🤙 Réservation enregistrée, bonne session !', 'ok');
+      afficherMessage('Inscription enregistree.', 'ok');
       evenement.target.reset();
-      chargerReservations();
+      chargerInscriptions();
+      chargerDashboard(); // le chiffre d'affaires et les eleves evoluent
     } else if (reponse.status === 503) {
-      afficherMessage('⚠️ Base de données injoignable : réessaie un peu plus tard.', 'erreur');
+      afficherMessage('Base de donnees injoignable : reessaie un peu plus tard.', 'erreur');
     } else {
       const donnees = await reponse.json().catch(() => ({}));
       afficherMessage(`Erreur : ${donnees.error || `HTTP ${reponse.status}`}`, 'erreur');
@@ -225,14 +250,15 @@ async function soumettreReservation(evenement) {
 
 document.addEventListener('DOMContentLoaded', () => {
   chargerInstance();
+  chargerDashboard();
   chargerSante();
-  chargerSpots();
-  chargerReservations();
+  chargerCours();
+  chargerInscriptions();
 
   $('#btn-recharger-sante').addEventListener('click', chargerSante);
   $('#btn-dix-requetes').addEventListener('click', envoyerDixRequetes);
-  $('#form-resa').addEventListener('submit', soumettreReservation);
+  $('#form-inscription').addEventListener('submit', soumettreInscription);
 
-  // Auto-refresh de la santé toutes les 10 secondes.
+  // Auto-refresh de la sante toutes les 10 secondes.
   setInterval(chargerSante, 10000);
 });
