@@ -1,0 +1,336 @@
+/* Thème surf du mock Shaka Surf — 100 % local, aucune ressource externe. */
+
+:root {
+  --ocean-fonce: #0b3954;
+  --ocean: #1273a3;
+  --ocean-clair: #58b4d1;
+  --ecume: #f4fbfd;
+  --sable: #ffe8c2;
+  --corail: #ff6b5e;
+  --vert-ok: #2eb872;
+  --rouge-ko: #e63946;
+  --orange-degrade: #f4a236;
+  --gris: #b8c4cc;
+  --texte: #16323f;
+  --rayon: 14px;
+  --ombre: 0 4px 14px rgba(11, 57, 84, 0.10);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: linear-gradient(180deg, var(--ecume) 0%, #ddeff6 100%);
+  color: var(--texte);
+  min-height: 100vh;
+}
+
+/* ----- Bandeau "mode dégradé" (base de données down) ----- */
+.bandeau-degrade {
+  background: var(--orange-degrade);
+  color: #3d2a05;
+  text-align: center;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cache { display: none; }
+
+/* ----- En-tête ----- */
+.entete {
+  background: linear-gradient(135deg, var(--ocean-fonce), var(--ocean));
+  color: white;
+  text-align: center;
+  padding: 2.2rem 1rem 1.6rem;
+}
+
+.entete h1 {
+  margin: 0;
+  font-size: 2.4rem;
+  letter-spacing: 1px;
+}
+
+.slogan {
+  margin: 0.4rem 0 0.9rem;
+  opacity: 0.85;
+  font-style: italic;
+}
+
+.badge-instance {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  padding: 0.3rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Vague décorative sous l'en-tête */
+.vague {
+  display: block;
+  width: 100%;
+  height: 42px;
+  margin-top: -1px; /* évite un liseré entre l'en-tête et la vague */
+}
+
+.vague path { fill: var(--ocean); }
+
+/* ----- Mise en page principale ----- */
+main {
+  max-width: 960px;
+  margin: 1.5rem auto 2rem;
+  padding: 0 1rem;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.carte {
+  background: white;
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 1.2rem 1.4rem;
+}
+
+.carte h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.25rem;
+  color: var(--ocean-fonce);
+}
+
+.sous-titre {
+  margin: 1.2rem 0 0.4rem;
+  font-size: 1rem;
+  color: var(--ocean-fonce);
+}
+
+.note {
+  color: #5d7482;
+  font-size: 0.88rem;
+}
+
+.erreur { color: var(--rouge-ko); }
+
+/* ----- Boutons ----- */
+.btn {
+  background: var(--ocean);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.btn:hover { background: var(--ocean-fonce); transform: translateY(-1px); }
+.btn:disabled { background: var(--gris); cursor: wait; transform: none; }
+
+.btn.secondaire {
+  background: white;
+  color: var(--ocean);
+  border: 2px solid var(--ocean);
+}
+
+.btn.secondaire:hover { background: var(--ecume); }
+
+/* ----- Santé de la chaîne ----- */
+.chaine {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.maillon {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--ecume);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-weight: 600;
+}
+
+.fleche { color: var(--gris); font-weight: 700; }
+
+.pastille {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.pastille.verte { background: var(--vert-ok); box-shadow: 0 0 6px var(--vert-ok); }
+.pastille.rouge { background: var(--rouge-ko); box-shadow: 0 0 6px var(--rouge-ko); }
+.pastille.grise { background: var(--gris); }
+
+.ligne-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+/* ----- Visualiseur de load balancing ----- */
+.barres-lb {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ligne-barre {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.label-barre {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.piste-barre {
+  background: var(--ecume);
+  border-radius: 999px;
+  height: 24px;
+  overflow: hidden;
+}
+
+.barre {
+  background: linear-gradient(90deg, var(--ocean-clair), var(--ocean));
+  height: 100%;
+  border-radius: 999px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  min-width: 1.6rem;
+  transition: width 0.25s ease;
+}
+
+/* ----- Spots ----- */
+.grille-spots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+
+.carte-spot {
+  border: 1px solid #e3eef3;
+  border-radius: var(--rayon);
+  padding: 0.9rem 1rem;
+  background: linear-gradient(180deg, white, var(--ecume));
+}
+
+.carte-spot .emoji-spot { font-size: 1.6rem; }
+
+.carte-spot h3 {
+  margin: 0.3rem 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--ocean-fonce);
+}
+
+.carte-spot .infos {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.etiquette {
+  background: var(--sable);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b4f17;
+}
+
+.etiquette.vague-haut { background: #d8f0fa; color: var(--ocean-fonce); }
+
+/* ----- Réservations ----- */
+.form-resa {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.form-resa label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ocean-fonce);
+}
+
+.form-resa input,
+.form-resa select {
+  border: 1px solid #cfe0e8;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: white;
+}
+
+.form-resa input:focus,
+.form-resa select:focus {
+  outline: 2px solid var(--ocean-clair);
+  border-color: var(--ocean);
+}
+
+.message {
+  margin: 0.8rem 0 0;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.message.ok { background: #e3f7ec; color: #14613c; }
+.message.erreur { background: #fde8e8; color: #8f1d27; }
+
+.liste-resa {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.liste-resa li {
+  background: var(--ecume);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.92rem;
+}
+
+/* ----- Pied de page ----- */
+.pied {
+  text-align: center;
+  color: #5d7482;
+  font-size: 0.85rem;
+  padding: 1.2rem 1rem 1.8rem;
+}
+
+/* ----- Responsive simple ----- */
+@media (max-width: 560px) {
+  .entete h1 { font-size: 1.8rem; }
+  .chaine { gap: 0.45rem; }
+  .ligne-barre { grid-template-columns: 80px 1fr; }
+}

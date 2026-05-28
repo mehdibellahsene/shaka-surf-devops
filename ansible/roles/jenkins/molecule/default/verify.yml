@@ -3,19 +3,17 @@
   hosts: all
   become: true
   tasks:
-    - name: Jenkins est actif
-      ansible.builtin.service:
-        name: jenkins
-        state: started
-      check_mode: true
-      register: jk
-      failed_when: jk is failed
+    - name: Le paquet Jenkins est installé
+      ansible.builtin.command: dpkg-query -W jenkins
+      changed_when: false
 
-    - name: Le port 8080 (Jenkins) est en écoute
-      ansible.builtin.wait_for:
-        port: 8080
-        host: 127.0.0.1
-        timeout: 90
+    - name: Le port HTTP de Jenkins est configuré
+      ansible.builtin.command: grep -q '^HTTP_PORT=8080$' /etc/default/jenkins
+      changed_when: false
+
+    - name: Le vhost Nginx relaie vers Jenkins (port amont 8080)
+      ansible.builtin.command: grep -q '127.0.0.1:8080' /etc/nginx/sites-available/jenkins.conf
+      changed_when: false
 
     - name: Nginx est actif (reverse-proxy)
       ansible.builtin.service:
@@ -24,3 +22,9 @@
       check_mode: true
       register: ng
       failed_when: ng is failed
+
+    - name: Le port 80 (vhost Nginx) répond
+      ansible.builtin.wait_for:
+        port: 80
+        host: 127.0.0.1
+        timeout: 10

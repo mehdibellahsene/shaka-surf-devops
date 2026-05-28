@@ -2,25 +2,28 @@
 # Variables NON sensibles, partagées par tous les groupes.
 # Les secrets sont dans vault.yml (chiffré, gitignoré). Voir vault.example.yml.
 
-# Dépôt applicatif Shaka Surf
-shaka_repo_url: "https://github.com/BMR-Consulting/Shaka-Surf.git"
-shaka_repo_version: "main"
+# Application Shaka Surf (mock versionné dans le dépôt, dossier app/).
+# playbook_dir = ansible/ -> ../app pointe vers la racine du dépôt.
+app_source_dir: "{{ playbook_dir }}/../app"
 shaka_app_dir: "/opt/shaka-surf"
 
 # Base de données
 postgres_version: 15
-postgres_db: "postgres"
-postgres_app_user: "authenticator"
-postgres_listen_port: 5432
+postgres_db: "shakasurf"
+postgres_app_user: "shaka"
 
 # Réseau applicatif autorisé à joindre PostgreSQL (CIDR du VPC Terraform).
 db_allowed_cidr: "10.20.0.0/16"
 
-# Backups
+# Backups (cron quotidien 02h00 ; la rétention de 7 jours est appliquée
+# côté S3 par le lifecycle Terraform, voir terraform/s3.tf).
 backup_dir: "/var/backups/postgres"
 backup_cron_hour: 2
 backup_cron_minute: 0
-backup_retention_days: 7
+
+# Contact ACME pour Let's Encrypt (LB + usine logicielle).
+# À personnaliser : Let's Encrypt refuse les adresses @example.com.
+letsencrypt_email: "mehdiredha6@gmail.com"
 
 # Usine logicielle
 jenkins_http_port: 8080

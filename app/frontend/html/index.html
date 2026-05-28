@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🤙 Shaka Surf — démo DevOps</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+  <!-- Bandeau affiché quand la base de données est injoignable (mode dégradé) -->
+  <div id="bandeau-degrade" class="bandeau-degrade cache">
+    ⚠️ Mode dégradé : la base de données est injoignable. Spots et réservations indisponibles.
+  </div>
+
+  <header class="entete">
+    <h1>🤙 Shaka Surf</h1>
+    <p class="slogan">Réserve ta session, la vague t'attend.</p>
+    <span id="badge-instance" class="badge-instance">Servi par …</span>
+  </header>
+
+  <!-- Vague décorative sous l'en-tête (SVG embarqué : aucun asset externe) -->
+  <svg class="vague" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z"></path>
+  </svg>
+
+  <main>
+
+    <!-- 1. Santé de la chaîne Frontend -> Backend -> PostgreSQL -->
+    <section class="carte" id="section-sante">
+      <h2>🩺 Santé de la chaîne</h2>
+      <div class="chaine">
+        <div class="maillon">
+          <span class="pastille verte" id="pastille-front"></span>
+          <span>Frontend</span>
+        </div>
+        <span class="fleche">→</span>
+        <div class="maillon">
+          <span class="pastille grise" id="pastille-back"></span>
+          <span>Backend</span>
+        </div>
+        <span class="fleche">→</span>
+        <div class="maillon">
+          <span class="pastille grise" id="pastille-db"></span>
+          <span>PostgreSQL</span>
+        </div>
+      </div>
+      <div class="ligne-actions">
+        <button id="btn-recharger-sante" class="btn secondaire" type="button">🔄 Recharger</button>
+        <span class="note">Actualisation automatique toutes les 10 s</span>
+      </div>
+    </section>
+
+    <!-- 2. Visualiseur de load balancing -->
+    <section class="carte" id="section-lb">
+      <h2>⚖️ Load balancing en direct</h2>
+      <p class="note">
+        Chaque requête traverse le load balancer : observe le round-robin
+        entre les instances applicatives.
+      </p>
+      <button id="btn-dix-requetes" class="btn" type="button">Envoyer 10 requêtes 🌊</button>
+      <div id="barres-lb" class="barres-lb"></div>
+    </section>
+
+    <!-- 3. Spots de surf -->
+    <section class="carte" id="section-spots">
+      <h2>🏄 Spots de surf</h2>
+      <div id="liste-spots" class="grille-spots">
+        <p class="note">Chargement des spots…</p>
+      </div>
+    </section>
+
+    <!-- 4. Réservations -->
+    <section class="carte" id="section-resa">
+      <h2>📅 Réserver une session</h2>
+      <form id="form-resa" class="form-resa">
+        <label>
+          Prénom
+          <input type="text" id="resa-nom" name="name" placeholder="Kelly" required>
+        </label>
+        <label>
+          Spot
+          <select id="resa-spot" name="spot_id" required>
+            <option value="">— choisis un spot —</option>
+          </select>
+        </label>
+        <label>
+          Date
+          <input type="date" id="resa-date" name="booked_for" required>
+        </label>
+        <button type="submit" class="btn">Réserver 🤙</button>
+      </form>
+      <p id="message-resa" class="message cache"></p>
+      <h3 class="sous-titre">Dernières réservations</h3>
+      <ul id="liste-resa" class="liste-resa">
+        <li class="note">Chargement…</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="pied">
+    Projet DevOps EFREI — mock applicatif (les vraies fonctionnalités sont hors périmètre).
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -4,3 +4,6 @@ jenkins_http_port: 8080
 jenkins_domain: "jenkins.localhost"
 citools_enable_tls: true
 letsencrypt_email: "admin@example.com"
+# Démarrer réellement le service Jenkins (mis à false sous Molecule : on y
+# valide l'installation et la configuration, pas le boot d'une lourde JVM).
+jenkins_start_service: true

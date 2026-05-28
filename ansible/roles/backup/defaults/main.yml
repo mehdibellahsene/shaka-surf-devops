@@ -1,11 +1,13 @@
 ---
 backup_dir: "/var/backups/postgres"
-postgres_db: "postgres"
+# Base applicative du mock (alignée sur group_vars/all/vars.yml et le rôle database).
+postgres_db: "shakasurf"
 backup_cron_hour: 2
 backup_cron_minute: 0
-backup_retention_days: 7
+# La rétention (7 jours) est appliquée côté S3 par le lifecycle Terraform
+# (terraform/s3.tf) : rien à configurer ici.
 # Nom du bucket S3 (fourni par l'inventaire Terraform) et région.
 backup_s3_bucket: ""
 aws_region: "eu-west-3"
-# Installer un cron (mis à false sous Molecule).
+# Installer le cron quotidien (testé tel quel sous Molecule).
 backup_install_cron: true

@@ -5,7 +5,6 @@
       - curl
       - ca-certificates
       - gnupg
-      - git
       - acl
       - python3-psycopg2
     state: present
@@ -51,39 +50,52 @@
     state: started
     enabled: true
 
+# Mot de passe distinct de celui de l'utilisateur applicatif : les VMs App
+# ne reçoivent jamais les droits superutilisateur.
 - name: Définir le mot de passe du superutilisateur postgres
   community.postgresql.postgresql_user:
     name: postgres
+    password: "{{ vault_postgres_admin_password }}"
+  become: true
+  become_user: postgres
+
+- name: Créer l'utilisateur applicatif {{ postgres_app_user }}
+  community.postgresql.postgresql_user:
+    name: "{{ postgres_app_user }}"
     password: "{{ vault_postgres_password }}"
   become: true
   become_user: postgres
 
-- name: Cloner le dépôt Shaka Surf pour les scripts d'init SQL
-  ansible.builtin.git:
-    repo: "{{ shaka_repo_url }}"
-    dest: "{{ db_repo_dir }}"
-    version: "{{ shaka_repo_version }}"
-    depth: 1
-    force: true
+- name: Créer la base {{ postgres_db }} (propriétaire {{ postgres_app_user }})
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_db }}"
+    owner: "{{ postgres_app_user }}"
+    state: present
+  become: true
+  become_user: postgres
 
-- name: Lister les scripts d'init Supabase (ordre alphabétique)
-  ansible.builtin.find:
-    paths: "{{ db_repo_dir }}/volumes/db/init"
-    patterns: "*.sql"
-  register: init_scripts
+- name: Copier le script d'init SQL du mock sur la VM
+  ansible.builtin.copy:
+    src: "{{ database_init_sql }}"
+    dest: "{{ database_init_sql_dest }}"
+    owner: postgres
+    group: postgres
+    mode: "0644"
 
 - name: Garde-fou d'idempotence — marqueur d'init déjà appliquée
   ansible.builtin.stat:
     path: /var/lib/postgresql/.shaka_init_done
   register: init_marker
 
-- name: Appliquer les scripts d'init Supabase (roles, schemas, RLS)
+# Appliqué en tant qu'utilisateur applicatif (via 127.0.0.1) : les tables
+# spots/bookings appartiennent ainsi à {{ postgres_app_user }}, pas au superutilisateur.
+- name: Appliquer le script d'init (tables spots/bookings + seed, SQL idempotent)
   community.postgresql.postgresql_script:
     db: "{{ postgres_db }}"
-    path: "{{ item.path }}"
-  become: true
-  become_user: postgres
-  loop: "{{ init_scripts.files | sort(attribute='path') }}"
+    path: "{{ database_init_sql_dest }}"
+    login_host: 127.0.0.1
+    login_user: "{{ postgres_app_user }}"
+    login_password: "{{ vault_postgres_password }}"
   when: not init_marker.stat.exists
 
 - name: Poser le marqueur d'init

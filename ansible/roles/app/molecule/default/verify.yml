@@ -5,24 +5,51 @@
   vars:
     shaka_app_dir: "/opt/shaka-surf"
   tasks:
-    - name: Le fichier compose applicatif a été rendu
+    - name: Le docker-compose applicatif a été copié depuis app/
       ansible.builtin.stat:
-        path: "{{ shaka_app_dir }}/docker-compose.app.yml"
+        path: "{{ shaka_app_dir }}/docker-compose.yml"
       register: compose_file
       failed_when: not compose_file.stat.exists
 
-    - name: Le compose ne contient PAS de service db (déporté sur la VM dédiée)
-      ansible.builtin.command: grep -E '^\s{2}db:' {{ shaka_app_dir }}/docker-compose.app.yml
-      register: db_service
-      changed_when: false
-      failed_when: db_service.rc == 0
-
-    - name: Le compose pointe vers la base externe (DB_HOST)
-      ansible.builtin.command: grep -q 'DB_HOST}:5432' {{ shaka_app_dir }}/docker-compose.app.yml
-      changed_when: false
+    - name: Le backend du mock a été copié (server.js)
+      ansible.builtin.stat:
+        path: "{{ shaka_app_dir }}/backend/server.js"
+      register: backend_file
+      failed_when: not backend_file.stat.exists
 
     - name: Le fichier .env a été rendu avec les permissions restreintes
       ansible.builtin.stat:
         path: "{{ shaka_app_dir }}/.env"
       register: env_file
       failed_when: not env_file.stat.exists or env_file.stat.mode != '0600'
+
+    - name: Le .env contient les cinq clés attendues
+      ansible.builtin.command: grep -q '^{{ item }}=' {{ shaka_app_dir }}/.env
+      changed_when: false
+      loop:
+        - DB_HOST
+        - DB_NAME
+        - DB_USER
+        - DB_PASSWORD
+        - INSTANCE_NAME
+
+    - name: Le .env pointe vers la base externe (db_host de l'inventaire)
+      ansible.builtin.command: grep -q '^DB_HOST=10.20.0.50$' {{ shaka_app_dir }}/.env
+      changed_when: false
+
+    # Validation structurelle du compose copié : YAML valide et services
+    # attendus présents (le boot complet est testé par la démo locale).
+    - name: Lire le docker-compose copié
+      ansible.builtin.slurp:
+        src: "{{ shaka_app_dir }}/docker-compose.yml"
+      register: compose_raw
+
+    - name: Le compose est un YAML valide avec les services web et api
+      ansible.builtin.assert:
+        that:
+          - compose_parsed is mapping
+          - "'web' in compose_parsed.services"
+          - "'api' in compose_parsed.services"
+        quiet: true
+      vars:
+        compose_parsed: "{{ compose_raw.content | b64decode | from_yaml }}"

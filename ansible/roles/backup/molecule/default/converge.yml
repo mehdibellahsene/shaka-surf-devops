@@ -2,5 +2,16 @@
 - name: Converge
   hosts: all
   become: true
+  pre_tasks:
+    # En production, l'utilisateur « postgres » est fourni par le rôle database
+    # (qui s'exécute sur la même VM). En test isolé, on le crée comme fixture
+    # pour que le rôle backup puisse déposer ses scripts/propriétés de fichiers.
+    - name: Créer l'utilisateur postgres (fixture, fourni par le rôle database en prod)
+      ansible.builtin.user:
+        name: postgres
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+        state: present
   roles:
     - role: backup

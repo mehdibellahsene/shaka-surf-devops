@@ -69,10 +69,16 @@ variable "ssh_public_key_path" {
 }
 
 variable "admin_cidr" {
-  description = "CIDR autorisé à se connecter en SSH (et aux UIs de l'usine logicielle). Mettre votre IP publique /32."
+  description = "CIDR autorisé à se connecter en SSH (et aux UIs de l'usine logicielle). Mettre votre IP publique /32 dans terraform.tfvars."
   type        = string
-  # Valeur volontairement restrictive : à surcharger dans terraform.tfvars.
-  default = "0.0.0.0/0"
+
+  # Pas de valeur par défaut : la variable est obligatoire, et 0.0.0.0/0 est
+  # refusé (le SSH des VMs et les UIs citools ne doivent jamais être ouverts
+  # à tout Internet — exigence « règles firewall adaptées » du sujet).
+  validation {
+    condition     = var.admin_cidr != "0.0.0.0/0"
+    error_message = "admin_cidr ne doit pas être 0.0.0.0/0 : indiquez votre IP publique en /32 (ex. 203.0.113.10/32)."
+  }
 }
 
 variable "root_volume_size" {

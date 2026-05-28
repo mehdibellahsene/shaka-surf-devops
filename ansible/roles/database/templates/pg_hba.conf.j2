@@ -8,5 +8,5 @@ local   all       all                            scram-sha-256
 host    all       all       127.0.0.1/32         scram-sha-256
 host    all       all       ::1/128              scram-sha-256
 
-# Connexions chiffrées depuis le réseau applicatif (VPC) uniquement.
-host    all       all       {{ db_allowed_cidr }}   scram-sha-256
+# Réseau applicatif (VPC) : uniquement l'utilisateur applicatif sur sa base.
+host    {{ postgres_db }}   {{ postgres_app_user }}   {{ db_allowed_cidr }}   scram-sha-256

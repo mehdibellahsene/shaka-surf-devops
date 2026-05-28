@@ -1,5 +1,10 @@
 # Conception — Infrastructure DevOps pour Shaka Surf
 
+> **Document historique.** L'application réelle (stack Supabase) décrite ici a
+> depuis été remplacée par le mock versionné dans `app/` (le sujet laisse les
+> technologies applicatives libres). L'architecture d'infrastructure reste
+> identique ; pour l'état actuel, voir `README.md` et `docs/architecture.md`.
+
 > Spec de conception du projet DevOps (EFREI 4e année). Déploiement automatisé,
 > multi-machines, de l'application **Shaka Surf** sur AWS via Terraform + Ansible,
 > testé avec Molecule.

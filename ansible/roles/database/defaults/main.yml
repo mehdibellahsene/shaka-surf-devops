@@ -1,9 +1,11 @@
 ---
 postgres_version: 15
-postgres_db: "postgres"
-postgres_listen_port: 5432
+postgres_db: "shakasurf"
+postgres_app_user: "shaka"
 db_allowed_cidr: "10.20.0.0/16"
-shaka_repo_url: "https://github.com/BMR-Consulting/Shaka-Surf.git"
-shaka_repo_version: "main"
-# Répertoire où le dépôt est cloné pour récupérer les scripts d'init SQL.
-db_repo_dir: "/opt/shaka-surf-db"
+# Script SQL d'initialisation du mock (idempotent : IF NOT EXISTS / ON CONFLICT).
+# Résolu depuis le dépôt (app_source_dir vient de group_vars). Sous Molecule,
+# playbook_dir pointe vers le scénario : la valeur est surchargée dans molecule.yml.
+database_init_sql: "{{ app_source_dir | default(playbook_dir ~ '/../app') }}/db/init.sql"
+# Copie du script d'init sur la VM (appliqué ensuite via postgresql_script).
+database_init_sql_dest: "/var/lib/postgresql/shaka_init.sql"

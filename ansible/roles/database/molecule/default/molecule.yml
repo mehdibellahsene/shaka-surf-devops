@@ -14,8 +14,6 @@ platforms:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
     pre_build_image: true
-    published_ports:
-      - "0.0.0.0:5432:5432/tcp"
 provisioner:
   name: ansible
   env:
@@ -24,6 +22,10 @@ provisioner:
     host_vars:
       db-instance:
         vault_postgres_password: "molecule-test-pw"
+        vault_postgres_admin_password: "molecule-admin-pw"
         db_allowed_cidr: "172.16.0.0/12"
+        # Sous Molecule, playbook_dir pointe vers le scénario : on résout le
+        # script d'init du mock depuis la racine du dépôt.
+        database_init_sql: "${MOLECULE_PROJECT_DIRECTORY}/../../../app/db/init.sql"
 verifier:
   name: ansible

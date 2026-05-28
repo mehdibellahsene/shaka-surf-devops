@@ -123,6 +123,16 @@ resource "aws_security_group" "citools" {
   }
 
   ingress {
+    # Nécessaire au seul challenge ACME HTTP-01 de Let's Encrypt (les serveurs
+    # de validation arrivent depuis Internet) ; les vhosts redirigent vers 443.
+    description = "HTTP (challenge ACME Let's Encrypt)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     description = "Jenkins"
     from_port   = 8080
     to_port     = 8080

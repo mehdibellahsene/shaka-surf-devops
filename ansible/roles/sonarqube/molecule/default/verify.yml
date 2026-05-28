@@ -17,6 +17,10 @@
       register: compose
       failed_when: not compose.stat.exists
 
+    - name: Le vhost SonarQube expose le bon port amont
+      ansible.builtin.command: grep -q '127.0.0.1:9000' /etc/nginx/sites-available/sonar.conf
+      changed_when: false
+
     - name: Nginx est actif (reverse-proxy)
       ansible.builtin.service:
         name: nginx
@@ -24,3 +28,9 @@
       check_mode: true
       register: ng
       failed_when: ng is failed
+
+    - name: Le port 80 (vhost Nginx) répond
+      ansible.builtin.wait_for:
+        port: 80
+        host: 127.0.0.1
+        timeout: 10

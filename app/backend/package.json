@@ -1,0 +1,13 @@
+{
+  "name": "shaka-surf-backend",
+  "version": "1.0.0",
+  "description": "API mock du projet Shaka Surf — projet DevOps EFREI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}

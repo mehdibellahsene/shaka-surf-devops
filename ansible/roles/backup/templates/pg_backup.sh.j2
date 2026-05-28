@@ -12,8 +12,9 @@ PASS_FILE="/etc/postgres-backup.pass"
 TS="$(date +%Y-%m-%d_%H%M%S)"
 FILE="${BACKUP_DIR}/${DB_NAME}_${TS}.sql.gz.enc"
 
-# Dump compressé puis chiffré symétriquement.
-sudo -u postgres pg_dump "${DB_NAME}" \
+# Dump compressé puis chiffré symétriquement. --clean --if-exists rend la
+# restauration rejouable sur une base déjà peuplée (même pipeline que la démo).
+sudo -u postgres pg_dump --clean --if-exists "${DB_NAME}" \
   | gzip \
   | openssl enc -aes-256-cbc -salt -pbkdf2 -pass "file:${PASS_FILE}" -out "${FILE}"
 

@@ -2,5 +2,11 @@
 - name: Converge
   hosts: all
   become: true
+  pre_tasks:
+    - name: Créer l'utilisateur de déploiement (fourni par le rôle common en production)
+      ansible.builtin.user:
+        name: deploy
+        shell: /bin/bash
+        state: present
   roles:
     - role: app

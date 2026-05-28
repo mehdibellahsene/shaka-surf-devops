@@ -1,0 +1,27 @@
+---
+# MODÈLE de coffre Ansible Vault.
+#
+# Volontairement placé HORS de group_vars/all/ : Ansible charge automatiquement
+# tous les fichiers de ce dossier, et un oubli de l'étape 1 déploierait
+# silencieusement les placeholders ci-dessous. Ici, sans vault.yml, le
+# playbook s'arrête avec une erreur claire de variable indéfinie.
+#
+# 1. Copier en group_vars/all/vault.yml :
+#        cp vault.example.yml group_vars/all/vault.yml
+# 2. Renseigner de VRAIES valeurs (longues et aléatoires, ex. openssl rand -base64 32).
+# 3. Chiffrer :  ansible-vault encrypt group_vars/all/vault.yml
+# 4. vault.yml est gitignoré : ne JAMAIS committer la version en clair.
+#
+# Aucune de ces valeurs ne doit apparaître en clair dans le dépôt.
+
+# --- PostgreSQL ---
+# Mot de passe de l'utilisateur APPLICATIF (shaka) : celui que reçoivent les
+# VMs App via le .env. Distinct du mot de passe superutilisateur ci-dessous.
+vault_postgres_password: "CHANGEME-mot-de-passe-applicatif-fort"
+
+# Mot de passe du SUPERUTILISATEUR postgres (administration uniquement,
+# jamais transmis aux VMs App).
+vault_postgres_admin_password: "CHANGEME-mot-de-passe-admin-fort"
+
+# --- Chiffrement des backups (openssl enc -aes-256-cbc) ---
+vault_backup_passphrase: "CHANGEME-passphrase-chiffrement-backups"

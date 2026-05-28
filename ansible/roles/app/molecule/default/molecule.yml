@@ -21,14 +21,13 @@ provisioner:
   inventory:
     host_vars:
       app-instance:
-        # On valide le RENDU des templates (compose + .env) sans démarrer
-        # la stack : un docker-in-docker complet Supabase serait trop lourd ici.
+        # On valide la COPIE de app/ et le RENDU du .env sans démarrer la
+        # stack : pas de docker-in-docker dans l'instance Molecule.
         app_compose_up: false
+        # Dossier app/ du dépôt, résolu depuis le dossier du rôle
+        # (MOLECULE_PROJECT_DIRECTORY = ansible/roles/app).
+        app_source_dir: "${MOLECULE_PROJECT_DIRECTORY}/../../../app"
         db_host: "10.20.0.50"
-        public_site_url: "https://1-2-3-4.sslip.io"
         vault_postgres_password: "molecule-pw"
-        vault_jwt_secret: "molecule-jwt-secret"
-        vault_anon_key: "molecule-anon"
-        vault_service_role_key: "molecule-service"
 verifier:
   name: ansible

@@ -2,8 +2,6 @@
 - name: Recreate compose stack
   community.docker.docker_compose_v2:
     project_src: "{{ shaka_app_dir }}"
-    files:
-      - docker-compose.app.yml
     state: present
     build: always
     recreate: always

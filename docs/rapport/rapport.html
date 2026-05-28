@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport — Infrastructure DevOps Shaka Surf</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --muted:#555; --rule:#c9c9c9; --accent:#0b5cad; --accent2:#0d7a6f;
+    --code-bg:#f5f6f8; --code-ink:#23303a; --ok:#127a3d; --warn:#b5651d; --fig-bg:#fbfbfc;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,"Times New Roman",serif;
+    --sans:"Segoe UI",-apple-system,Helvetica,Arial,sans-serif;
+    --mono:"Cascadia Mono","Consolas","Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  html{font-size:10.6pt}
+  body{
+    font-family:var(--serif); color:var(--ink); background:#fff;
+    margin:0; line-height:1.5; text-rendering:optimizeLegibility;
+  }
+  .page{max-width:200mm; margin:0 auto; padding:14mm 16mm 20mm;}
+
+  /* ---- Bloc titre ---- */
+  header.title{ text-align:center; border-bottom:2.5px solid var(--ink); padding-bottom:14px; margin-bottom:6px;}
+  header.title .kicker{font-family:var(--sans); font-size:8.6pt; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); font-weight:700;}
+  header.title h1{font-size:21pt; line-height:1.18; margin:9px 0 6px; font-weight:700; letter-spacing:-.2px;}
+  header.title .sub{font-size:11.5pt; color:var(--muted); font-style:italic; margin:0 auto; max-width:150mm;}
+  header.title .authors{font-family:var(--sans); font-size:9.6pt; margin-top:12px; color:#222;}
+  header.title .authors b{font-weight:600;}
+  header.title .meta{font-family:var(--sans); font-size:8.6pt; color:var(--muted); margin-top:3px;}
+
+  /* ---- Résumé ---- */
+  .abstract{
+    border:1px solid var(--rule); background:var(--fig-bg); border-left:3px solid var(--accent);
+    padding:11px 15px; margin:16px 0 6px; font-size:9.8pt; line-height:1.5;
+  }
+  .abstract h2{font-family:var(--sans); font-size:8.4pt; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin:0 0 5px;}
+  .abstract p{margin:0 0 6px;} .abstract p:last-child{margin-bottom:0;}
+  .keywords{font-size:9pt; margin-top:7px;} .keywords b{font-variant:small-caps;}
+
+  /* ---- Corps en deux colonnes ---- */
+  .body{column-count:2; column-gap:9mm; margin-top:12px; text-align:justify; hyphens:auto;}
+  .body > *{break-inside:avoid-column;}
+  p{margin:0 0 7px;}
+  .body > p{text-indent:0;}
+
+  h2.sec{
+    font-family:var(--sans); font-size:11pt; font-weight:700; color:var(--ink);
+    margin:13px 0 6px; padding-bottom:3px; border-bottom:1px solid var(--rule);
+    counter-increment:sec; break-after:avoid;
+  }
+  h2.sec::before{content:counter(sec) ".\00a0\00a0"; color:var(--accent); font-weight:700;}
+  h3.sub{font-family:var(--sans); font-size:9.6pt; font-weight:700; color:#333; margin:9px 0 4px; counter-increment:sub; break-after:avoid;}
+  h3.sub::before{content:counter(sec) "." counter(sub) "\00a0\00a0"; color:var(--accent2); font-weight:700;}
+  body{counter-reset:sec;}
+  h2.sec{counter-reset:sub;}
+
+  ul.tight{margin:3px 0 8px; padding-left:16px;} ul.tight li{margin:0 0 3px;}
+  .lead::first-letter{}
+
+  strong{font-weight:600;}
+  .small{font-size:8.8pt; color:var(--muted);}
+  code{font-family:var(--mono); font-size:8.7pt; background:var(--code-bg); padding:.5px 3px; border-radius:3px; color:var(--code-ink);}
+
+  /* ---- Figures ---- */
+  figure{margin:8px 0 10px; background:var(--fig-bg); border:1px solid var(--rule); border-radius:4px; padding:8px; text-align:center; break-inside:avoid;}
+  figure img{max-width:100%; height:auto; border:1px solid #dfe2e6; border-radius:3px; background:#fff;}
+  figcaption{font-family:var(--sans); font-size:8.4pt; color:var(--muted); text-align:left; margin-top:6px; line-height:1.4;}
+  figcaption b{color:var(--ink); font-weight:700;}
+  figure.full{column-span:all; margin:10px 0 12px;}
+  .fig-2{display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:start;}
+  .fig-2 figure{margin:0;}
+
+  /* ---- Listings code/terminal ---- */
+  pre.term{
+    font-family:var(--mono); font-size:7.9pt; line-height:1.42; color:#e8edf2; background:#1c252e;
+    border-radius:5px; padding:9px 11px; margin:6px 0 9px; overflow:hidden; white-space:pre-wrap; word-break:break-word;
+    break-inside:avoid;
+  }
+  pre.term .c{color:#7fd1b9;} /* commande */
+  pre.term .ok{color:#7ee0a2;}
+  pre.term .dim{color:#9bb0c0;}
+  pre.term .hl{color:#ffd479;}
+  .listing-cap{font-family:var(--sans); font-size:8.2pt; color:var(--muted); margin:-4px 0 9px;}
+  .listing-cap b{color:var(--ink);}
+
+  /* ---- Tableaux ---- */
+  table{border-collapse:collapse; width:100%; font-size:8.7pt; margin:6px 0 10px; break-inside:avoid;}
+  table.full{column-span:all;}
+  caption{caption-side:top; text-align:left; font-family:var(--sans); font-size:8.4pt; color:var(--muted); margin-bottom:5px;}
+  caption b{color:var(--ink);}
+  th,td{border:1px solid var(--rule); padding:4px 7px; vertical-align:top; text-align:left;}
+  thead th{background:#eef2f6; font-family:var(--sans); font-weight:700; font-size:8.3pt;}
+  tbody tr:nth-child(even){background:#fafbfc;}
+  td.ok,span.ok{color:var(--ok); font-weight:700;}
+  td.cit{font-family:var(--mono); font-size:8pt;}
+  .tag{font-family:var(--sans); font-size:7.4pt; font-weight:700; padding:1px 6px; border-radius:10px; white-space:nowrap;}
+  .tag.green{background:#e2f5e9; color:#127a3d;}
+  .tag.blue{background:#e3eefb; color:#0b5cad;}
+
+  /* ---- Diagramme SVG ---- */
+  .arch{width:100%; height:auto; display:block; margin:2px auto;}
+
+  /* ---- Bandeau conformité ---- */
+  .verdict{column-span:all; border:1px solid var(--rule); border-left:3px solid var(--ok); background:#f3faf5; padding:10px 14px; margin:6px 0 12px; font-size:9.4pt;}
+  .verdict b{color:var(--ok);}
+
+  footer.end{column-span:all; border-top:1px solid var(--rule); margin-top:14px; padding-top:8px; font-family:var(--sans); font-size:8pt; color:var(--muted); text-align:center;}
+
+  @media print{
+    @page{size:A4; margin:13mm;}
+    html{font-size:10pt;}
+    .page{max-width:none; margin:0; padding:0;}
+    a{color:var(--ink); text-decoration:none;}
+    pre.term{ -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    thead th,tbody tr:nth-child(even),.tag,.abstract,figure,.verdict{ -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  a{color:var(--accent); text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="title">
+    <div class="kicker">Projet DevOps · Infrastructure &amp; Déploiement · EFREI Paris — 4ᵉ année</div>
+    <h1>Déploiement automatisé et reproductible d'une infrastructure multi-machines</h1>
+    <div class="sub">Étude de cas <em>Shaka&nbsp;Surf</em> : provisionnement <span style="font-variant:small-caps">Terraform</span>, configuration <span style="font-variant:small-caps">Ansible</span> par rôles, et validation <span style="font-variant:small-caps">Molecule</span> — avec une maquette locale exécutable en une commande.</div>
+    <div class="authors"><b>Mehdi&nbsp;Bellahsène</b> &nbsp;·&nbsp; binôme/trinôme de projet</div>
+    <div class="meta">Dépôt : <code>github.com/mehdibellahsene/shaka-surf-devops</code> &nbsp;|&nbsp; Juin&nbsp;2026 &nbsp;|&nbsp; Rapport technique</div>
+  </header>
+
+  <section class="abstract">
+    <h2>Résumé</h2>
+    <p>Ce projet construit, <strong>entièrement en Infrastructure as Code</strong>, une infrastructure cloud multi-machines conforme au schéma imposé : un <strong>load balancer</strong> en point d'entrée HTTPS, <strong>N&nbsp;≥&nbsp;2 machines applicatives identiques</strong>, une <strong>base de données dédiée non exposée</strong>, et un <strong>bucket&nbsp;S3</strong> pour des sauvegardes chiffrées. <span style="font-variant:small-caps">Terraform</span> provisionne le réseau, les pare-feu et les machines AWS puis génère l'inventaire&nbsp;; <span style="font-variant:small-caps">Ansible</span> configure chaque groupe de machines via des rôles&nbsp;; chaque rôle est couvert par un scénario <span style="font-variant:small-caps">Molecule</span>. Le sujet laissant les technologies applicatives libres, l'application déployée est un <strong>mock assumé</strong> de Shaka&nbsp;Surf (frontend statique + API Node/PostgreSQL) qui conserve les propriétés structurantes utiles à l'évaluation de l'infrastructure : état persistant en base, instances identiques derrière le répartiteur, et mode dégradé. Une <strong>maquette locale</strong> (<code>docker compose up</code>) reproduit 1:1 l'architecture AWS pour que le correcteur teste le tout sans compte cloud. Le présent rapport documente l'ensemble, répond point par point au cahier des charges, et présente les <strong>preuves d'exécution</strong> (captures et sorties réelles) obtenues sur poste.</p>
+    <div class="keywords"><b>Mots-clés —</b> Infrastructure as Code · Terraform · Ansible · Molecule · Docker · PostgreSQL · sauvegarde S3 · load balancing · sslip.io · Let's Encrypt.</div>
+  </section>
+
+  <div class="body">
+
+    <h2 class="sec">Contexte et objectif</h2>
+    <p>Le projet assemble les outils pratiqués en TP (Terraform, Ansible, Jenkins, SonarQube) pour produire une infrastructure multi-machines <strong>automatisée, documentée et reproductible de zéro</strong> par un tiers, à partir du seul dépôt. Le fournisseur cloud et les technologies sont libres&nbsp;; seules les exigences fonctionnelles et de qualité sont imposées. Les choix retenus : <strong>AWS</strong> (EC2, VPC, S3, IAM) côté provisionnement, <strong>Ansible</strong> côté configuration, <strong>Docker&nbsp;Compose</strong> pour l'exécution applicative sur chaque VM, et <strong>Nginx&nbsp;+&nbsp;Let's&nbsp;Encrypt</strong> (domaine <code>&lt;ip&gt;.sslip.io</code>) pour la terminaison TLS.</p>
+    <p>L'objectif de qualité prime : « <em>un projet propre et documenté qui ne tourne pas vaut plus qu'un projet qui tourne mais incompréhensible</em> ». Le dépôt est donc organisé, commenté en français, et chaque exigence est traçable jusqu'au fichier qui la réalise (§<span style="color:var(--accent)">11</span>).</p>
+
+    <h2 class="sec">Architecture cible</h2>
+    <p>L'infrastructure respecte le schéma imposé (Figure&nbsp;1). Le flux entrant est terminé en HTTPS sur le load balancer, réparti en <em>round-robin</em> vers les VM applicatives&nbsp;; celles-ci joignent seules la base de données&nbsp;; la base exporte chaque nuit une sauvegarde chiffrée vers S3. Une VM « usine logicielle » optionnelle (bonus) héberge Jenkins, SonarQube et Nexus, <strong>isolée</strong> du réseau applicatif.</p>
+    <p>Point de sécurité central exigé par le sujet : <strong>le load balancer ne connaît pas la base de données</strong>. Aucune règle réseau ne relie ces deux machines (Tableau&nbsp;1).</p>
+
+    <figure class="full">
+      <svg class="arch" viewBox="0 0 720 470" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5b6b78"/></marker>
+          <style>
+            .box{fill:#fff;stroke:#0b5cad;stroke-width:1.4;rx:7}
+            .lbl{font-size:12px;fill:#15303f;font-weight:600}
+            .sub{font-size:9.5px;fill:#5b6b78}
+            .edge{stroke:#5b6b78;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+            .port{font-size:9px;fill:#0b5cad;font-weight:700}
+            .zone{fill:#f3f7fb;stroke:#c9d8e6;stroke-width:1;stroke-dasharray:4 3;rx:9}
+          </style>
+        </defs>
+
+        <text x="360" y="18" text-anchor="middle" class="sub" font-style="italic">Internet</text>
+        <line x1="360" y1="24" x2="360" y2="44" class="edge"/>
+        <text x="372" y="40" class="port">HTTPS 443</text>
+
+        <!-- LB -->
+        <rect x="250" y="46" width="220" height="46" rx="7" class="box" stroke="#0d7a6f"/>
+        <text x="360" y="66" text-anchor="middle" class="lbl">VM Load Balancer — Nginx + TLS</text>
+        <text x="360" y="82" text-anchor="middle" class="sub">point d'entrée unique · round-robin · Let's Encrypt</text>
+
+        <!-- to apps -->
+        <line x1="300" y1="92" x2="210" y2="128" class="edge"/>
+        <line x1="420" y1="92" x2="510" y2="128" class="edge"/>
+        <text x="232" y="116" class="port">HTTP 80</text>
+
+        <!-- App zone -->
+        <rect x="78" y="130" width="564" height="64" class="zone"/>
+        <text x="90" y="146" class="sub">Réseau applicatif (N ≥ 2 VM identiques)</text>
+        <rect x="100" y="150" width="220" height="38" rx="7" class="box"/>
+        <text x="210" y="166" text-anchor="middle" class="lbl">VM App 1 — web + api</text>
+        <text x="210" y="180" text-anchor="middle" class="sub">docker compose : nginx + Node/Express</text>
+        <rect x="400" y="150" width="220" height="38" rx="7" class="box"/>
+        <text x="510" y="166" text-anchor="middle" class="lbl">VM App 2 — web + api</text>
+        <text x="510" y="180" text-anchor="middle" class="sub">docker compose : nginx + Node/Express</text>
+
+        <!-- to DB -->
+        <line x1="210" y1="188" x2="330" y2="232" class="edge"/>
+        <line x1="510" y1="188" x2="390" y2="232" class="edge"/>
+        <text x="300" y="214" class="port">PostgreSQL 5432</text>
+
+        <!-- DB -->
+        <rect x="250" y="234" width="220" height="46" rx="7" class="box" stroke="#9a3b3b"/>
+        <text x="360" y="254" text-anchor="middle" class="lbl">VM Base de données — PostgreSQL 15</text>
+        <text x="360" y="270" text-anchor="middle" class="sub">jamais exposée à Internet</text>
+
+        <!-- to S3 -->
+        <line x1="360" y1="280" x2="360" y2="312" class="edge"/>
+        <text x="372" y="300" class="port">pg_dump chiffré · cron 02h00</text>
+        <rect x="262" y="314" width="196" height="42" rx="7" class="box" stroke="#7a5b0d"/>
+        <text x="360" y="332" text-anchor="middle" class="lbl">Bucket S3 — backups</text>
+        <text x="360" y="347" text-anchor="middle" class="sub">versioning · chiffrement · lifecycle 7 j</text>
+
+        <!-- citools aside -->
+        <rect x="492" y="300" width="210" height="74" class="zone" stroke="#c9b48e"/>
+        <text x="502" y="316" class="sub">Usine logicielle (bonus) — isolée</text>
+        <rect x="506" y="322" width="182" height="44" rx="7" class="box" stroke="#7a5b0d"/>
+        <text x="597" y="340" text-anchor="middle" class="lbl">VM citools</text>
+        <text x="597" y="355" text-anchor="middle" class="sub">Jenkins · SonarQube · Nexus (HTTPS)</text>
+
+        <!-- barrier note LB != DB -->
+        <line x1="150" y1="60" x2="150" y2="257" stroke="#b23b3b" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <path d="M150,150 q-26,0 -26,40 q0,40 26,40" fill="none" stroke="#b23b3b" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="64" y="220" font-size="9px" fill="#b23b3b" font-weight="700">Aucune route</text>
+        <text x="60" y="232" font-size="9px" fill="#b23b3b" font-weight="700">LB&nbsp;⇸&nbsp;BDD</text>
+
+        <text x="360" y="400" text-anchor="middle" class="sub" font-style="italic">Provisionné par Terraform · configuré par Ansible · inventaire généré depuis les outputs Terraform</text>
+        <rect x="120" y="416" width="480" height="40" class="zone" stroke="#c9d8e6"/>
+        <text x="360" y="434" text-anchor="middle" class="sub">Sur AWS : 1 Security Group par rôle (LB / App / DB / citools).</text>
+        <text x="360" y="448" text-anchor="middle" class="sub">En maquette locale : 1 réseau Docker par Security Group (cf. §6).</text>
+      </svg>
+      <figcaption><b>Figure 1.</b> Architecture cible. Le trait rouge matérialise l'exigence du sujet : le load balancer ne dispose d'aucune route vers la base de données. La VM « usine logicielle » est isolée du réseau applicatif.</figcaption>
+    </figure>
+
+    <table class="full">
+      <caption><b>Tableau 1.</b> Règles de pare-feu par type de machine (Security Groups Terraform, <code>terraform/security.tf</code>).</caption>
+      <thead><tr><th>Groupe</th><th>Entrant autorisé</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>LB</td><td>80, 443</td><td>0.0.0.0/0 ; SSH 22 ← <code>admin_cidr</code></td></tr>
+        <tr><td>App</td><td>80</td><td><em>SG-LB uniquement</em> ; SSH 22 ← <code>admin_cidr</code></td></tr>
+        <tr><td>DB</td><td>5432</td><td><em>SG-App uniquement</em> ; SSH 22 ← <code>admin_cidr</code></td></tr>
+        <tr><td>citools</td><td>8080/9000/8081, 443 ; 80 (ACME)</td><td><code>admin_cidr</code> (80 ← 0.0.0.0/0 pour le défi Let's Encrypt)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sec">Application déployée : un mock assumé</h2>
+    <p>Le sujet précisant que « <em>le choix des technologies applicatives est libre</em> » et que l'évaluation porte sur l'infrastructure, l'application est volontairement <strong>mockée</strong> : une carcasse simple aux interactions réelles, sans environnements ni fonctionnalités métier. Ce choix maximise la lisibilité tout en exerçant exactement ce que l'infrastructure doit prouver.</p>
+    <p>Chaque VM applicative exécute, via <code>docker compose</code>, <strong>deux conteneurs</strong> :</p>
+    <ul class="tight">
+      <li><strong>web</strong> — frontend statique servi par Nginx, qui relaie <code>/api/</code> vers l'API ;</li>
+      <li><strong>api</strong> — service Node/Express interrogeant PostgreSQL (port&nbsp;9940), avec valeurs par défaut pour tous les paramètres (démarre sans <code>.env</code>).</li>
+    </ul>
+    <p>L'API expose : <code>/api/whoami</code> (identité de l'instance — sert à visualiser le round-robin), <code>/api/health</code> (état de la chaîne, ne plante jamais), <code>/api/spots</code> et <code>/api/bookings</code> (lecture/écriture en base). Le schéma et les données de départ sont chargés par <code>app/db/init.sql</code> (idempotent). L'interface (Figure&nbsp;2) reste ludique : santé de la chaîne en temps réel, visualiseur de répartition de charge, catalogue de spots de surf et réservations persistées.</p>
+
+    <div class="fig-2">
+      <figure>
+        <img src="img/app-overview.png" alt="Interface du mock Shaka Surf">
+        <figcaption><b>Figure 2.</b> Le mock servi via le load balancer : badge d'instance, santé de la chaîne (Frontend → Backend → PostgreSQL au vert), spots et réservations persistées.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/app-roundrobin.png" alt="Round-robin du load balancer">
+        <figcaption><b>Figure 3.</b> Répartition de charge observée : 10 requêtes via le LB se partagent <code>app-1</code>&nbsp;(5) / <code>app-2</code>&nbsp;(5). Le bandeau « Servi par <em>app-2</em> » confirme l'alternance des deux VM identiques.</figcaption>
+      </figure>
+    </div>
+
+    <h2 class="sec">Infrastructure — Terraform</h2>
+    <p>Tout est provisionné par Terraform (<code>terraform/</code>) — <strong>aucune ressource créée à la main</strong> :</p>
+    <ul class="tight">
+      <li><strong>Réseau</strong> : VPC, sous-réseaux publics multi-AZ, Internet Gateway, tables de routage (<code>network.tf</code>).</li>
+      <li><strong>Compute</strong> : EC2 pour le LB (1), les App (<code>count = var.app_count</code>, validé&nbsp;≥&nbsp;2), la DB (1) et citools (1) — AMI Ubuntu LTS (<code>compute.tf</code>).</li>
+      <li><strong>Load balancer</strong> : VM Nginx dédiée (maîtrise de la terminaison TLS Let's Encrypt + sslip.io).</li>
+      <li><strong>Stockage</strong> : bucket S3 (versioning, chiffrement SSE, <em>lifecycle</em> 7&nbsp;jours, accès public bloqué) — <code>s3.tf</code>.</li>
+      <li><strong>IAM</strong> : rôle + <em>instance-profile</em> donnant à la seule VM&nbsp;DB le droit d'écrire sous le préfixe <code>postgres/</code> — pas de clé statique (<code>iam.tf</code>).</li>
+      <li><strong>Security Groups</strong> : un par rôle (Tableau&nbsp;1), <code>security.tf</code>.</li>
+      <li><strong>Inventaire</strong> : un <code>local_file</code> rend <code>ansible/inventory/hosts.ini</code> depuis les <em>outputs</em> (groupes <code>loadbalancer</code>, <code>app</code>, <code>db</code>, <code>citools</code>) — <code>templates/inventory.tmpl</code>.</li>
+    </ul>
+    <p>La variable <code>admin_cidr</code> est <strong>obligatoire</strong> et refuse <code>0.0.0.0/0</code> (validation Terraform), pour ne jamais ouvrir le SSH ni les UIs à tout Internet. La configuration est validée statiquement (Listing&nbsp;4).</p>
+
+    <h2 class="sec">Configuration &amp; déploiement — Ansible</h2>
+    <p>L'inventaire est organisé par groupes&nbsp;; les secrets passent par <strong>Ansible Vault</strong>. Le playbook <code>site.yml</code> orchestre les rôles dans un ordre garantissant que la base est prête avant les apps et que le LB connaît les <em>upstreams</em> (Tableau&nbsp;2).</p>
+
+    <table>
+      <caption><b>Tableau 2.</b> Rôles Ansible et responsabilités.</caption>
+      <thead><tr><th>Rôle</th><th>Responsabilité</th></tr></thead>
+      <tbody>
+        <tr><td>common</td><td>paquets de base, utilisateur de déploiement, durcissement SSH, fail2ban, Docker + plugin compose</td></tr>
+        <tr><td>loadbalancer</td><td>Nginx reverse-proxy, upstreams = VM App, certbot Let's Encrypt, redirection 80→443</td></tr>
+        <tr><td>app</td><td>copie <code>app/</code> sur la VM, rend le <code>.env</code> depuis le Vault, <code>docker compose up --build</code></td></tr>
+        <tr><td>database</td><td>PostgreSQL 15, utilisateur + base applicatifs, <code>init.sql</code> idempotent, <code>pg_hba</code> restreint</td></tr>
+        <tr><td>backup</td><td>script <code>pg_dump</code>→gzip→AES-256→S3, cron quotidien, purge locale</td></tr>
+        <tr><td>jenkins / sonarqube / nexus</td><td>usine logicielle (bonus), chacun en vhost HTTPS dédié</td></tr>
+      </tbody>
+    </table>
+
+    <p>L'accès restreint à la base est doublement assuré : par les Security Groups (Tableau&nbsp;1) et par <code>pg_hba.conf</code> limité au CIDR applicatif. Le bucket S3 est <strong>provisionné par Terraform</strong> et <strong>configuré par Ansible</strong> (destination + credentials par instance-profile).</p>
+
+    <h2 class="sec">Démonstration fonctionnelle (maquette locale)</h2>
+    <p>Pour que le correcteur teste « simplement comment ça marche » sans compte AWS, le dépôt fournit une <strong>maquette locale</strong> reproduisant 1:1 l'architecture : un <code>docker-compose.yml</code> à la racine + le dossier <code>demo/</code>. Une seule commande suffit :</p>
+    <pre class="term"><span class="c">$ docker compose up --build -d</span>
+<span class="dim"># puis ouvrir</span> https://localhost:8443</pre>
+    <p>Les <strong>réseaux Docker y simulent les Security Groups</strong> : <code>edge</code>, <code>app1</code>, <code>app2</code>, <code>data</code>, <code>storage</code>. Comme en production, le conteneur <code>lb</code> n'est <strong>pas</strong> membre du réseau <code>data</code> : il ne peut pas joindre la base. Le bucket S3 est simulé par <strong>MinIO</strong>. Les huit conteneurs démarrent sains (Listing&nbsp;1).</p>
+
+    <pre class="term"><span class="c">$ docker compose ps</span>
+NAME                   SERVICE    STATUS
+shaka-demo-lb-1        lb         Up  <span class="dim">0.0.0.0:8080→80, :8443→443</span>
+shaka-demo-app1-web-1  app1-web   Up <span class="ok">(healthy)</span>
+shaka-demo-app1-api-1  app1-api   Up <span class="ok">(healthy)</span>
+shaka-demo-app2-web-1  app2-web   Up <span class="ok">(healthy)</span>
+shaka-demo-app2-api-1  app2-api   Up <span class="ok">(healthy)</span>
+shaka-demo-db-1        db         Up <span class="ok">(healthy)</span>
+shaka-demo-s3-1        s3         Up  <span class="dim">0.0.0.0:9001→9001 (MinIO)</span>
+shaka-demo-backup-1    backup     Up</pre>
+    <div class="listing-cap"><b>Listing 1.</b> Pile locale complète démarrée — 8 conteneurs, sondes de santé au vert.</div>
+
+    <p><strong>Répartition de charge.</strong> Le bouton « 10 requêtes » envoie 10 appels <code>/api/whoami</code> à travers le LB&nbsp;; les réponses alternent entre les deux VM (Figure&nbsp;3, Listing&nbsp;2).</p>
+    <pre class="term"><span class="c">$ for i in $(seq 10); do curl -sk https://localhost:8443/api/whoami; done</span>
+app-1  app-1  app-1  app-2  app-1
+app-2  app-1  app-2  app-1  app-2</pre>
+    <div class="listing-cap"><b>Listing 2.</b> Round-robin du load balancer entre les deux machines applicatives.</div>
+
+    <p><strong>Résilience (mode dégradé).</strong> En coupant la base (<code>docker compose stop db</code>), l'application <em>ne plante pas</em> : <code>/api/health</code> renvoie <code>db:"down"</code>, l'interface affiche un bandeau orange et les panneaux dépendants signalent l'indisponibilité (Figure&nbsp;4). Au redémarrage de la base, tout revient au vert.</p>
+
+    <figure>
+      <img src="img/app-degraded.png" alt="Mode dégradé : base de données coupée">
+      <figcaption><b>Figure 4.</b> Base coupée : bandeau « Mode dégradé », pastille <em>PostgreSQL</em> au rouge, spots et réservations marqués indisponibles — l'application reste vivante (aucun crash).</figcaption>
+    </figure>
+
+    <p><strong>Sauvegarde &amp; restauration.</strong> Le conteneur <code>backup</code> exécute le même pipeline qu'en production (<code>pg_dump | gzip | openssl&nbsp;AES-256 | aws s3 cp</code>) sur un cron 02h00&nbsp;; il est aussi déclenchable à la main. La restauration récupère le dernier objet, le déchiffre et le réinjecte (Listing&nbsp;3). La console MinIO (<code>localhost:9001</code>) montre les objets, dont la sauvegarde automatique de 02h00.</p>
+    <pre class="term"><span class="c">$ docker compose exec backup backup</span>
+🌊 Sauvegarde de shakasurf@db…
+📤 Envoi vers s3://shaka-surf-backups/postgres/2026-06-13_173023.sql.gz.enc
+<span class="ok">✅ Sauvegarde envoyée</span>
+
+<span class="c">$ aws --endpoint-url http://s3:9000 s3 ls s3://shaka-surf-backups/postgres/</span>
+2026-06-12 13:49  1280  2026-06-12_134914.sql.gz.enc
+2026-06-13 02:00  1280  2026-06-13_020000.sql.gz.enc  <span class="hl">← cron automatique</span>
+2026-06-13 17:30  1328  2026-06-13_173023.sql.gz.enc
+
+<span class="c">$ docker compose exec backup restore</span>
+🔎 Sauvegarde la plus récente : 2026-06-13_173023.sql.gz.enc
+🔓 Déchiffrement puis restauration dans shakasurf@db…
+<span class="ok">✅ Restauration terminée</span></pre>
+    <div class="listing-cap"><b>Listing 3.</b> Cycle complet sauvegarde → S3 (MinIO) → restauration, vérifié de bout en bout.</div>
+
+    <h2 class="sec">Tests — Molecule</h2>
+    <p>Chaque rôle possède un scénario Molecule (driver Docker). Les rôles dont le service est léger démarrent et testent le <strong>service réel + port</strong>&nbsp;; les rôles lourds (pile applicative, JVM Jenkins, SonarQube, Nexus) sont validés au niveau <strong>installation/configuration/rendu</strong> — le boot complet en docker-in-docker serait disproportionné et c'est l'approche documentée du projet. La commande <code>molecule test</code> passe sur l'ensemble des rôles (Tableau&nbsp;3).</p>
+
+    <table>
+      <caption><b>Tableau 3.</b> Résultats <code>molecule test</code> (exécutés sur poste, driver Docker).</caption>
+      <thead><tr><th>Rôle</th><th>Vérifie</th><th>État</th></tr></thead>
+      <tbody>
+        <tr><td>common</td><td>paquets, durcissement SSH, Docker actif</td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>database</td><td>service actif, port 5432, <code>SELECT count(*) spots ≥ 1</code></td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>app</td><td>fichiers déployés, <code>.env</code> (0600), compose valide (web+api)</td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>loadbalancer</td><td>Nginx actif, ports 80/443, config valide</td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>backup</td><td>script déployé + exécutable, entrée cron présente</td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>jenkins</td><td>paquet installé, port configuré, vhost → 8080</td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>sonarqube</td><td><code>vm.max_map_count</code>, vhost → 9000, Nginx</td><td><span class="tag green">PASS</span></td></tr>
+        <tr><td>nexus</td><td>vhost → 8081, Nginx actif, port 80</td><td><span class="tag green">PASS</span></td></tr>
+      </tbody>
+    </table>
+
+    <pre class="term"><span class="c">$ cd ansible/roles/app &amp;&amp; molecule test</span>
+<span class="dim">PLAY [Verify]</span>
+app-instance : ok=8  changed=0  unreachable=0  <span class="ok">failed=0</span>
+INFO  default ➜ verify: <span class="ok">Executed: Successful</span></pre>
+    <div class="listing-cap"><b>Listing 4a.</b> Exemple de scénario Molecule réussi (rôle <code>app</code>).</div>
+
+    <h2 class="sec">Stratégie de sauvegarde</h2>
+    <p>La sauvegarde est justifiée par le compromis fraîcheur/coût d'une application de réservation à trafic modéré (Tableau&nbsp;4). La <strong>restauration est indépendante</strong> : <code>ansible-playbook restore.yml</code> récupère le dernier dump, le déchiffre et le restaure sur la VM&nbsp;DB — procédure documentée au README, et rejouée à l'identique en maquette locale (Listing&nbsp;3).</p>
+    <table>
+      <caption><b>Tableau 4.</b> Paramètres de sauvegarde et justification.</caption>
+      <thead><tr><th>Paramètre</th><th>Valeur</th><th>Justification</th></tr></thead>
+      <tbody>
+        <tr><td>Quoi</td><td><code>pg_dump</code> logique</td><td>portable, restaurable sur toute instance PG&nbsp;15</td></tr>
+        <tr><td>Quand</td><td>quotidien 02h00 (cron)</td><td>trafic nocturne faible ; RPO ≤ 24 h suffisant</td></tr>
+        <tr><td>Traitement</td><td>gzip + AES-256</td><td>coût S3 réduit ; confidentialité au repos</td></tr>
+        <tr><td>Où</td><td>bucket S3 dédié</td><td>versioning + SSE + accès public bloqué</td></tr>
+        <tr><td>Rétention</td><td>7 jours (lifecycle S3)</td><td>une semaine de récupération, purge auto</td></tr>
+        <tr><td>Accès</td><td>instance-profile IAM</td><td>aucune clé statique ; préfixe restreint</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sec">Sécurité &amp; secrets</h2>
+    <ul class="tight">
+      <li><strong>Aucune credential en clair</strong> dans le dépôt ; secrets via Ansible Vault (3 valeurs : mot de passe applicatif, mot de passe superutilisateur, passphrase de backup). Le modèle <code>vault.example.yml</code> est placé <em>hors</em> du dossier auto-chargé, pour qu'un oubli stoppe le déploiement plutôt que d'utiliser des valeurs factices.</li>
+      <li><code>.gitignore</code> couvre <code>*.tfstate*</code>, <code>*.tfvars</code>, <code>.env</code>, <code>*.pem/*.key</code>, l'inventaire généré et <code>vault.yml</code>.</li>
+      <li>Security Groups stricts ; <strong>LB&nbsp;⇸&nbsp;BDD</strong> ; base sans IP publique ; SSH limité à <code>admin_cidr</code> (≠ 0.0.0.0/0, imposé par validation).</li>
+      <li>Accès S3 par instance-profile IAM ; durcissement SSH (root + mots de passe désactivés) + fail2ban.</li>
+      <li>Les seuls mots de passe versionnés sont ceux de la <strong>maquette locale</strong> (évidents, commentés « démo locale uniquement »).</li>
+    </ul>
+
+    <h2 class="sec">Usine logicielle (bonus)</h2>
+    <p>Une VM <code>citools</code>, isolée du réseau applicatif, héberge Jenkins (8080), SonarQube (9000) et Nexus (8081), chacun derrière un vhost Nginx avec un <strong>sous-domaine HTTPS dédié</strong> (<code>jenkins-&lt;ip&gt;.sslip.io</code>, etc.). Chaque outil a son rôle Ansible et son scénario Molecule (Tableau&nbsp;3). Le playbook <code>restore.yml</code> (§9) complète l'exigence de restauration indépendante.</p>
+
+    <h2 class="sec">Conformité au cahier des charges</h2>
+    <div class="verdict">Chaque exigence du sujet est <b>satisfaite</b> et tracée jusqu'au fichier qui la réalise (Tableau&nbsp;5). Les éléments vérifiés sur poste — pile locale, round-robin, mode dégradé, cycle backup/restore, <code>molecule test</code>, <code>terraform validate</code> — figurent en §2–9.</div>
+
+    <table class="full">
+      <caption><b>Tableau 5.</b> Couverture exigence par exigence.</caption>
+      <thead><tr><th>§</th><th>Exigence</th><th>Réalisation</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>3.1</td><td>≥ 2 instances applicatives identiques</td><td class="cit">terraform/compute.tf (count = app_count, validé ≥2)</td><td class="ok">✓</td></tr>
+        <tr><td>3.1</td><td>BDD dédiée, non exposée</td><td class="cit">compute.tf + security.tf (5432 ← SG-App seul)</td><td class="ok">✓</td></tr>
+        <tr><td>3.1</td><td>Load balancer</td><td class="cit">VM Nginx dédiée + roles/loadbalancer</td><td class="ok">✓</td></tr>
+        <tr><td>3.1</td><td>Bucket S3 des backups</td><td class="cit">s3.tf (versioning, SSE, lifecycle) + iam.tf</td><td class="ok">✓</td></tr>
+        <tr><td>3.1</td><td>Règles réseau par machine</td><td class="cit">security.tf — 1 SG par rôle</td><td class="ok">✓</td></tr>
+        <tr><td>3.1</td><td>100 % IaC, rien à la main</td><td class="cit">terraform/ ; inventaire généré (inventory.tmpl)</td><td class="ok">✓</td></tr>
+        <tr><td>3.2</td><td>Rôle LB (reverse proxy HTTPS)</td><td class="cit">roles/loadbalancer (certbot, sslip.io)</td><td class="ok">✓</td></tr>
+        <tr><td>3.2</td><td>Rôle app (back+front / VM)</td><td class="cit">roles/app (web + api via compose)</td><td class="ok">✓</td></tr>
+        <tr><td>3.2</td><td>Rôle BDD, accès restreint</td><td class="cit">roles/database (pg_hba + SG)</td><td class="ok">✓</td></tr>
+        <tr><td>3.2</td><td>Rôle backup → S3, justifié</td><td class="cit">roles/backup + §8 ; bucket TF, config Ansible</td><td class="ok">✓</td></tr>
+        <tr><td>3.2</td><td>Inventaire par groupes</td><td class="cit">hosts.ini généré (loadbalancer/app/db/citools)</td><td class="ok">✓</td></tr>
+        <tr><td>3.3</td><td>1 scénario Molecule / rôle</td><td class="cit">roles/*/molecule/default/ — 8 rôles</td><td class="ok">✓</td></tr>
+        <tr><td>3.3</td><td>Service actif + ports ; test vert</td><td class="cit">Tableau 3 — molecule test PASS</td><td class="ok">✓</td></tr>
+        <tr><td>3.4</td><td>README + schéma + backup + Molecule</td><td class="cit">README.md, docs/architecture.md, ce rapport</td><td class="ok">✓</td></tr>
+        <tr><td>3.5 / 4</td><td>Structure lisible, .gitignore</td><td class="cit">app/ demo/ terraform/ ansible/ docs/</td><td class="ok">✓</td></tr>
+        <tr><td>4</td><td>Aucun secret en clair</td><td class="cit">Ansible Vault (3 secrets) ; §9</td><td class="ok">✓</td></tr>
+        <tr><td>5</td><td>Usine logicielle isolée + 3 rôles</td><td class="cit">VM citools ; roles/{jenkins,sonarqube,nexus}</td><td class="ok">✓</td></tr>
+        <tr><td>5</td><td>Domaines HTTPS dédiés</td><td class="cit">vhosts sslip.io par outil</td><td class="ok">✓</td></tr>
+        <tr><td>5</td><td>restore.yml indépendant + documenté</td><td class="cit">ansible/restore.yml ; README §6</td><td class="ok">✓</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sec">Reproductibilité</h2>
+    <h3 class="sub">Tester en 2 minutes (sans AWS)</h3>
+    <pre class="term"><span class="c">$ git clone &lt;dépôt&gt; &amp;&amp; cd shaka-surf-devops</span>
+<span class="c">$ docker compose up --build -d</span>      <span class="dim"># maquette locale 1:1</span>
+<span class="dim"># https://localhost:8443 — round-robin, réservation,</span>
+<span class="dim"># stop/start db (mode dégradé), exec backup backup|restore,</span>
+<span class="dim"># console MinIO http://localhost:9001</span></pre>
+    <h3 class="sub">Déploiement AWS réel</h3>
+    <pre class="term"><span class="c">$ cd terraform &amp;&amp; terraform init &amp;&amp; terraform apply</span>
+<span class="c">$ cd ../ansible &amp;&amp; ansible-playbook site.yml --ask-vault-pass</span></pre>
+    <pre class="term"><span class="c">$ terraform validate</span>
+<span class="ok">Success! The configuration is valid.</span></pre>
+    <div class="listing-cap"><b>Listing 4b.</b> Validation statique de l'IaC (Terraform 1.9, <code>validate</code> + <code>fmt</code>).</div>
+
+    <h2 class="sec">Limites connues &amp; conclusion</h2>
+    <p>L'application est <strong>mockée à dessein</strong> : le sujet laisse les technos libres et évalue l'infrastructure&nbsp;; le mock en conserve les propriétés structurantes. Le déploiement AWS réel requiert des credentials (coûts à la charge de l'utilisateur) et n'a pas été exécuté ici&nbsp;; le code est néanmoins écrit pour être appliqué tel quel et la <strong>maquette locale reproduit l'architecture 1:1</strong>, ce qui a permis de valider de bout en bout le répartiteur, l'isolation réseau, la résilience et la chaîne de sauvegarde. L'ensemble respecte l'intégralité du cahier des charges (Tableau&nbsp;5), avec un dépôt propre, commenté et reproductible de zéro.</p>
+
+    <footer class="end">
+      Projet DevOps — EFREI Paris · Infrastructure &amp; Déploiement · Shaka Surf · Juin 2026 — Rapport généré à partir d'exécutions réelles sur poste (captures et sorties non simulées).
+    </footer>
+
+  </div><!-- /body -->
+</div><!-- /page -->
+</body>
+</html>

@@ -1,5 +1,9 @@
 # Shaka Surf DevOps Infrastructure — Implementation Plan
 
+> **Document historique.** L'application réelle (stack Supabase) visée par ce
+> plan a depuis été remplacée par le mock versionné dans `app/`. Pour l'état
+> actuel du dépôt, voir `README.md` et `docs/architecture.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a complete, reproducible Infrastructure-as-Code repository that provisions (Terraform/AWS) and configures (Ansible) a multi-VM deployment of the Shaka Surf app — load balancer, ≥2 app VMs, dedicated DB VM, S3 backups — plus a bonus CI/CD VM, each Ansible role covered by a Molecule scenario.

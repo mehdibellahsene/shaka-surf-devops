@@ -21,5 +21,8 @@ provisioner:
       jenkins-instance:
         citools_enable_tls: false
         jenkins_domain: "jenkins.example.com"
+        # On valide l'installation + la config sans booter la JVM Jenkins
+        # (trop lourde pour un conteneur de test, comme sonarqube/nexus).
+        jenkins_start_service: false
 verifier:
   name: ansible

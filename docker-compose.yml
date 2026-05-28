@@ -1,0 +1,210 @@
+# =============================================================================
+# Shaka Surf — DÉMO LOCALE COMPLÈTE
+# =============================================================================
+# Maquette 1:1, sur un seul poste, de l'architecture AWS du sujet (celle que
+# Terraform + Ansible déploient pour de vrai) :
+#
+#   Internet ──HTTPS──> [ lb ] ──round-robin──> [ app1-web + app1-api ]
+#                                          └──> [ app2-web + app2-api ]
+#                                                        │
+#                                                     [ db ] PostgreSQL 15
+#                                                        │ pg_dump chiffré (cron 02h00)
+#                                                  [ backup ] ──> [ s3 ] MinIO
+#
+# Les RÉSEAUX Docker simulent les SECURITY GROUPS AWS :
+#   - edge    <-> SG du load balancer : seul point d'entrée ; lb + frontaux web.
+#   - app1    <-> réseau privé de la VM App 1 : app1-web <-> app1-api.
+#   - app2    <-> réseau privé de la VM App 2 : app2-web <-> app2-api.
+#   - data    <-> SG de la VM base de données : SEULS les backends api et le
+#                 conteneur backup y accèdent. Le lb n'y est PAS : comme en
+#                 prod, le load balancer ne peut pas joindre la DB (exigence
+#                 du sujet).
+#   - storage <-> accès au bucket S3 : seul backup parle à MinIO.
+#
+# Seuls 3 ports sont publiés sur le poste : 8080 (HTTP -> 301 HTTPS),
+# 8443 (HTTPS, certificat auto-signé) et 9001 (console web MinIO).
+# Aucune VM applicative ni la DB n'est exposée, fidèle aux Security Groups.
+#
+# Démarrage :  docker compose up --build -d
+# Mode d'emploi détaillé (parcours de démo pas-à-pas) : demo/README.md
+# =============================================================================
+
+name: shaka-demo
+
+services:
+  # --------------------------------------------------------------------------
+  # VM Load Balancer (Nginx) — terminaison TLS + round-robin vers app1/app2.
+  # En prod : Let's Encrypt ; ici : certificat auto-signé CN=localhost généré
+  # au démarrage par demo/lb/entrypoint.sh.
+  # --------------------------------------------------------------------------
+  lb:
+    build: ./demo/lb
+    ports:
+      - "8080:80"   # HTTP : redirection 301 vers https://localhost:8443
+      - "8443:443"  # HTTPS (certificat auto-signé -> avertissement navigateur normal)
+    depends_on:
+      - app1-web
+      - app2-web
+    networks:
+      - edge
+
+  # --------------------------------------------------------------------------
+  # VM App 1 — frontend statique (nginx) + backend API (Node/Express).
+  # --------------------------------------------------------------------------
+  app1-web:
+    build: ./app/frontend
+    environment:
+      API_HOST: app1-api
+    depends_on:
+      - app1-api
+    networks:
+      - edge
+      - app1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app1-api:
+    build: ./app/backend
+    environment:
+      INSTANCE_NAME: app-1
+      DB_HOST: db
+      DB_NAME: shakasurf
+      DB_USER: shaka
+      DB_PASSWORD: demo # démo locale uniquement (en prod : Ansible Vault)
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app1
+      - data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9940/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # --------------------------------------------------------------------------
+  # VM App 2 — identique à App 1 (INSTANCE_NAME différent pour visualiser
+  # le round-robin du load balancer).
+  # --------------------------------------------------------------------------
+  app2-web:
+    build: ./app/frontend
+    environment:
+      API_HOST: app2-api
+    depends_on:
+      - app2-api
+    networks:
+      - edge
+      - app2
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app2-api:
+    build: ./app/backend
+    environment:
+      INSTANCE_NAME: app-2
+      DB_HOST: db
+      DB_NAME: shakasurf
+      DB_USER: shaka
+      DB_PASSWORD: demo # démo locale uniquement (en prod : Ansible Vault)
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app2
+      - data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9940/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # --------------------------------------------------------------------------
+  # VM Base de données — PostgreSQL 15, jamais exposée à Internet.
+  # Le schéma + seed (app/db/init.sql, idempotent) est appliqué au premier
+  # démarrage par l'entrypoint officiel de l'image.
+  # --------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: shakasurf
+      POSTGRES_USER: shaka
+      POSTGRES_PASSWORD: demo # démo locale uniquement (en prod : Ansible Vault)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./app/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shaka -d shakasurf"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - data
+
+  # --------------------------------------------------------------------------
+  # Bucket S3 — simulé par MinIO (API compatible S3).
+  # Seule la console web (9001) est publiée pour que le correcteur puisse
+  # constater la présence des sauvegardes ; l'API S3 (9000) reste interne.
+  # --------------------------------------------------------------------------
+  s3:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9001:9001" # console web MinIO uniquement
+    environment:
+      MINIO_ROOT_USER: demo # démo locale uniquement
+      MINIO_ROOT_PASSWORD: demodemo123 # démo locale uniquement
+    volumes:
+      - minio-data:/data
+    networks:
+      - storage
+
+  # --------------------------------------------------------------------------
+  # Backup — équivalent du cron pg_dump de la VM base de données :
+  # pg_dump -> gzip -> chiffrement AES-256 -> S3, tous les jours à 02h00.
+  # Déclenchement manuel : docker compose exec backup backup
+  # Restauration         : docker compose exec backup restore
+  # --------------------------------------------------------------------------
+  backup:
+    build: ./demo/backup
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: shaka
+      PGPASSWORD: demo # démo locale uniquement (en prod : Ansible Vault)
+      PGDATABASE: shakasurf
+      S3_ENDPOINT: http://s3:9000
+      S3_BUCKET: shaka-surf-backups
+      AWS_ACCESS_KEY_ID: demo # démo locale uniquement (en prod : instance-profile IAM)
+      AWS_SECRET_ACCESS_KEY: demodemo123 # démo locale uniquement
+      AWS_DEFAULT_REGION: eu-west-3
+      BACKUP_PASSPHRASE: demo-passphrase # démo locale uniquement (en prod : Ansible Vault)
+    depends_on:
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_started
+    networks:
+      - data
+      - storage
+
+# -----------------------------------------------------------------------------
+# Réseaux = Security Groups (voir l'en-tête). Le point clé : lb n'est pas sur
+# "data", il est donc incapable de joindre PostgreSQL, exactement comme en prod.
+# -----------------------------------------------------------------------------
+networks:
+  edge:    # SG load balancer : lb + frontaux web
+  app1:    # VM App 1 : web <-> api
+  app2:    # VM App 2 : web <-> api
+  data:    # SG database : api + backup uniquement (PAS le lb)
+  storage: # accès S3 : backup <-> MinIO uniquement
+
+volumes:
+  pgdata:     # données PostgreSQL (supprimées par "docker compose down -v")
+  minio-data: # objets MinIO / sauvegardes

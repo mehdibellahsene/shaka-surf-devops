@@ -1,21 +1,32 @@
 ---
-- name: Installer Java (prérequis Jenkins) et Nginx
+- name: Installer Java (prérequis Jenkins), Nginx et gnupg
   ansible.builtin.apt:
     name:
       - openjdk-17-jre-headless
       - nginx
+      - gnupg
     state: present
     update_cache: true
 
-- name: Ajouter la clé GPG du dépôt Jenkins
-  ansible.builtin.get_url:
-    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-    dest: /usr/share/keyrings/jenkins-keyring.asc
-    mode: "0644"
+# Le dépôt debian-stable de Jenkins est signé par la clé 7198F4B714ABFC68.
+# On l'importe depuis le serveur de clés puis on l'exporte en trousseau binaire
+# (format attendu par apt via signed-by). Plus robuste que le fichier .key publié,
+# qui peut ne plus correspondre à la signature courante du dépôt (→ NO_PUBKEY).
+- name: Importer la clé de signature du dépôt Jenkins
+  ansible.builtin.shell: |
+    set -euo pipefail
+    GNUPGHOME="$(mktemp -d)"
+    export GNUPGHOME
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 7198F4B714ABFC68
+    gpg --batch --export 7198F4B714ABFC68 > /usr/share/keyrings/jenkins-keyring.gpg
+    rm -rf "$GNUPGHOME"
+  args:
+    executable: /bin/bash
+    creates: /usr/share/keyrings/jenkins-keyring.gpg
 
 - name: Ajouter le dépôt Jenkins
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+    repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/"
     state: present
     filename: jenkins
 
@@ -25,11 +36,16 @@
     state: present
     update_cache: true
 
+# Les paquets Jenkins récents sont systemd-natifs et n'embarquent plus
+# /etc/default/jenkins : create garantit l'idempotence sur install neuve
+# (le port par défaut du paquet est de toute façon {{ jenkins_http_port }}).
 - name: Configurer le port HTTP de Jenkins
   ansible.builtin.lineinfile:
     path: /etc/default/jenkins
     regexp: '^HTTP_PORT='
     line: "HTTP_PORT={{ jenkins_http_port }}"
+    create: true
+    mode: "0644"
   notify: Restart jenkins
 
 - name: Démarrer et activer Jenkins
@@ -37,6 +53,7 @@
     name: jenkins
     state: started
     enabled: true
+  when: jenkins_start_service | bool
 
 - name: Déposer le vhost Nginx Jenkins (HTTPS via certbot)
   ansible.builtin.template:
@@ -51,6 +68,14 @@
     dest: /etc/nginx/sites-enabled/jenkins.conf
     state: link
   notify: Reload nginx citools
+
+- name: Installer certbot (plugin Nginx)
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+  when: citools_enable_tls | bool
 
 - name: Obtenir le certificat Let's Encrypt Jenkins
   ansible.builtin.command:

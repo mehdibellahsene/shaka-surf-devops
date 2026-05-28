@@ -44,16 +44,16 @@ output "backup_bucket" {
 resource "local_file" "ansible_inventory" {
   filename = "${path.module}/../ansible/inventory/hosts.ini"
   content = templatefile("${path.module}/templates/inventory.tmpl", {
-    lb_name        = aws_instance.lb.tags["Name"]
-    lb_public_ip   = aws_instance.lb.public_ip
-    db_name        = aws_instance.db.tags["Name"]
-    db_public_ip   = aws_instance.db.public_ip
-    db_private_ip  = aws_instance.db.private_ip
-    ssh_user       = var.ansible_ssh_user
-    backup_bucket  = aws_s3_bucket.backups.bucket
-    aws_region     = var.region
-    app_backends   = join(",", aws_instance.app[*].private_ip)
-    citools_name   = var.enable_citools ? aws_instance.citools[0].tags["Name"] : ""
+    lb_name           = aws_instance.lb.tags["Name"]
+    lb_public_ip      = aws_instance.lb.public_ip
+    db_name           = aws_instance.db.tags["Name"]
+    db_public_ip      = aws_instance.db.public_ip
+    db_private_ip     = aws_instance.db.private_ip
+    ssh_user          = var.ansible_ssh_user
+    backup_bucket     = aws_s3_bucket.backups.bucket
+    aws_region        = var.region
+    app_backends      = join(",", aws_instance.app[*].private_ip)
+    citools_name      = var.enable_citools ? aws_instance.citools[0].tags["Name"] : ""
     citools_public_ip = var.enable_citools ? aws_instance.citools[0].public_ip : ""
     apps = [
       for a in aws_instance.app : {

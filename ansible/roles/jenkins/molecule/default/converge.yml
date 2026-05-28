@@ -2,5 +2,14 @@
 - name: Converge
   hosts: all
   become: true
+  pre_tasks:
+    # L'image Docker minimale utilisée par Molecule supprime /usr/share/man :
+    # le post-install d'OpenJDK échoue alors en créant ses liens de pages man.
+    # On recrée le répertoire (sans objet sur une vraie VM Ubuntu).
+    - name: Garantir l'existence du répertoire des pages de manuel
+      ansible.builtin.file:
+        path: /usr/share/man/man1
+        state: directory
+        mode: "0755"
   roles:
     - role: jenkins

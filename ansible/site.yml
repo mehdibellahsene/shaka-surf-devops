@@ -3,16 +3,6 @@
 # Inventaire généré par Terraform (ansible/inventory/hosts.ini).
 # Secrets chargés automatiquement depuis group_vars/all/vault.yml (chiffré).
 
-# Domaine public du load balancer (sslip.io), réutilisé par les apps.
-- name: Calculer les variables dérivées
-  hosts: all
-  gather_facts: false
-  tasks:
-    - name: Domaine sslip.io du load balancer
-      ansible.builtin.set_fact:
-        lb_domain: "{{ lb_public_ip | replace('.', '-') }}.sslip.io"
-      run_once: true
-
 # --- Base système partout ---
 - name: Base commune (paquets, Docker, durcissement)
   hosts: all
@@ -32,8 +22,6 @@
 - name: Déploiement applicatif
   hosts: app
   become: true
-  vars:
-    public_site_url: "https://{{ hostvars[groups['loadbalancer'][0]]['lb_public_ip'] | default(lb_public_ip) | replace('.', '-') }}.sslip.io"
   roles:
     - app
 

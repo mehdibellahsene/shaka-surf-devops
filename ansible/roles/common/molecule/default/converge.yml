@@ -2,5 +2,14 @@
 - name: Converge
   hosts: all
   become: true
+  pre_tasks:
+    # Sur une vraie VM Ubuntu, ce répertoire est fourni par le service ssh /
+    # systemd-tmpfiles ; l'image de test minimale ne l'a pas, ce qui fait
+    # échouer la validation « sshd -t » du durcissement. Fixture de test.
+    - name: Garantir le répertoire de séparation de privilèges sshd
+      ansible.builtin.file:
+        path: /run/sshd
+        state: directory
+        mode: "0755"
   roles:
     - role: common

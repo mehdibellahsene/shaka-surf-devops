@@ -1,0 +1,22 @@
+# Vhost du frontend Shaka Surf (mock).
+# ${API_HOST} est substitué par l'entrypoint nginx (envsubst) au démarrage ;
+# les variables nginx ($uri, $host…) ne le sont pas car absentes de l'environnement.
+server {
+    listen 80;
+    server_name _;
+
+    # Fichiers statiques (index.html, app.css, app.js).
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Proxy vers l'API backend de la même VM.
+    location /api/ {
+        proxy_pass http://${API_HOST}:9940;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}

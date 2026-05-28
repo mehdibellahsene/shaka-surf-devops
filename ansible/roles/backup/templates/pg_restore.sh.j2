@@ -25,7 +25,7 @@ aws s3 cp "s3://${BUCKET}/postgres/${LATEST}" "${LOCAL}" --region "${REGION}"
 
 openssl enc -d -aes-256-cbc -pbkdf2 -pass "file:${PASS_FILE}" -in "${LOCAL}" \
   | gunzip \
-  | sudo -u postgres psql "${DB_NAME}"
+  | sudo -u postgres psql --quiet -v ON_ERROR_STOP=1 "${DB_NAME}"
 
 rm -f "${LOCAL}"
 echo "[$(date -Is)] Restauration de ${DB_NAME} terminée depuis ${LATEST}"

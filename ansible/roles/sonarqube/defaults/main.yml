@@ -1,6 +1,7 @@
 ---
 sonarqube_http_port: 9000
 sonarqube_dir: "/opt/sonarqube"
+# Défaut interne au conteneur SonarQube (base non exposée) — à surcharger en prod.
 sonarqube_db_password: "sonar"
 sonarqube_domain: "sonar.localhost"
 citools_enable_tls: true

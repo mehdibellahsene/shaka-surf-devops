@@ -1,0 +1,9 @@
+# Normalisation des fins de ligne.
+# Les scripts shell et fichiers SQL sont exécutés dans des conteneurs Linux :
+# ils doivent IMPÉRATIVEMENT rester en LF, même sur un poste Windows.
+*.sh text eol=lf
+*.sql text eol=lf
+# Templates Ansible (scripts/configs déployés tels quels sur les VMs Linux)
+# et templates nginx (envsubst dans le conteneur).
+*.j2 text eol=lf
+*.template text eol=lf
