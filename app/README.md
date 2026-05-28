@@ -2,17 +2,17 @@
 
 Application **factice** qui remplace la vraie application Shaka Surf pour le
 projet DevOps EFREI. Son seul but est de **rendre visible la chaîne de
-déploiement** : load balancer → VMs applicatives → PostgreSQL → backups S3
+déploiement** : load balancer -> VMs applicatives -> PostgreSQL -> backups S3
 (badge d'instance, visualiseur de round-robin, panneau de santé, mode dégradé
 quand la base est down). Les vraies fonctionnalités métier sont hors périmètre.
 
 ## Contenu
 
-| Dossier / fichier    | Rôle |
+| Dossier / fichier | Rôle |
 |----------------------|------|
-| `backend/`           | API Node 20 (Express + pg), port 9940 — `/api/whoami`, `/api/health`, `/api/spots`, `/api/bookings` |
-| `frontend/`          | Front statique (vanilla JS) servi par nginx:alpine, proxy `/api/` vers le backend |
-| `db/init.sql`        | Schéma + seed (6 spots), **idempotent** |
+| `backend/` | API Node 20 (Express + pg), port 9940 — `/api/whoami`, `/api/health`, `/api/spots`, `/api/bookings` |
+| `frontend/` | Front statique (vanilla JS) servi par nginx:alpine, proxy `/api/` vers le backend |
+| `db/init.sql` | Schéma + seed (6 spots), **idempotent** |
 | `docker-compose.yml` | Compose d'**une** VM applicative (`web` + `api`, **sans** service `db`) |
 
 Toutes les variables d'environnement du backend ont une valeur par défaut :

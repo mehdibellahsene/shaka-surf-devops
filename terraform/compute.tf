@@ -1,7 +1,5 @@
-# ============================================================================
 # Instances EC2 : load balancer, applications (>=2), base de données, citools.
 # AMI Ubuntu 22.04 LTS récupérée dynamiquement.
-# ============================================================================
 
 data "aws_ami" "ubuntu" {
   most_recent = true

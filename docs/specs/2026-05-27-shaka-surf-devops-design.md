@@ -13,8 +13,8 @@
 
 Provisionner et configurer, **entièrement en Infrastructure as Code**, une
 infrastructure multi-VM qui héberge l'application Shaka Surf, conforme au schéma
-imposé : Load Balancer → N≥2 VMs applicatives → VM base de données dédiée (non
-exposée) → bucket S3 pour les backups. Plus une VM « usine logicielle » (bonus)
+imposé : Load Balancer -> N≥2 VMs applicatives -> VM base de données dédiée (non
+exposée) -> bucket S3 pour les backups. Plus une VM « usine logicielle » (bonus)
 hébergeant Jenkins, SonarQube et Nexus.
 
 L'environnement doit être **reproductible de zéro** par un tiers à partir du
@@ -24,16 +24,16 @@ dépôt seul.
 
 SaaS multi-tenant dockerisé (monorepo `BMR-Consulting/Shaka-Surf`) :
 
-| Service          | Image / techno              | Port interne | Rôle |
+| Service | Image / techno | Port interne | Rôle |
 |------------------|-----------------------------|--------------|------|
-| `web`            | Next.js 16 (build standalone)| 3000         | Frontend |
-| `backend`        | Fastify (Node)              | 9940         | API métier, détient les secrets |
-| `auth`           | supabase/gotrue             | 9999         | Authentification JWT |
-| `rest`           | postgrest/postgrest         | 3000 (int.)  | API REST auto-générée |
-| `kong`           | kong:2.8.1                  | 8000/8443    | API gateway (`/auth`, `/rest`) |
-| `meta` + `studio`| supabase                    | 8080 / 3000  | Admin DB (optionnel en prod) |
-| `mailer-templates`| nginx:alpine               | 80           | Templates e-mail HTML |
-| `db`             | postgres:15                 | 5432         | **Déplacé sur la VM DB dédiée** |
+| `web` | Next.js 16 (build standalone)| 3000 | Frontend |
+| `backend` | Fastify (Node) | 9940 | API métier, détient les secrets |
+| `auth` | supabase/gotrue | 9999 | Authentification JWT |
+| `rest` | postgrest/postgrest | 3000 (int.) | API REST auto-générée |
+| `kong` | kong:2.8.1 | 8000/8443 | API gateway (`/auth`, `/rest`) |
+| `meta` + `studio`| supabase | 8080 / 3000 | Admin DB (optionnel en prod) |
+| `mailer-templates`| nginx:alpine | 80 | Templates e-mail HTML |
+| `db` | postgres:15 | 5432 | **Déplacé sur la VM DB dédiée** |
 
 Constat clé : l'app est **déjà orchestrée par `docker-compose`**. La stratégie de
 déploiement réutilise ce compose, en **retirant le service `db`** (qui part sur la
@@ -46,32 +46,32 @@ Internet
    │ HTTPS (443) — Let's Encrypt, domaine <ip>.sslip.io
    ▼
 ┌─────────────────────────┐
-│  VM Load Balancer (Nginx)│  IP publique, terminaison TLS, round-robin
+│ VM Load Balancer (Nginx)│ IP publique, terminaison TLS, round-robin
 └─────────────────────────┘
    │ HTTP (80) interne vers le frontend des VMs App
    ├───────────────────────────┬───────────────────────────┐
-   ▼                           ▼
-┌──────────────┐          ┌──────────────┐
-│  VM App 1    │   ...    │  VM App N≥2  │  docker-compose : web+backend+auth+
-│  (privée*)   │          │  (privée*)   │  rest+kong+mailer-templates
-└──────────────┘          └──────────────┘
+   ▼ ▼
+┌──────────────┐ ┌──────────────┐
+│ VM App 1 │ ... │ VM App N≥2 │ docker-compose : web+backend+auth+
+│ (privée*) │ │ (privée*) │ rest+kong+mailer-templates
+└──────────────┘ └──────────────┘
    │ PostgreSQL (5432), restreint au SG App uniquement
    └─────────────┬─────────────┘
                  ▼
         ┌──────────────────┐
-        │  VM Base données │  PostgreSQL 15, **pas d'IP publique**
-        │  (privée)        │  init Supabase + RLS
+        │ VM Base données │ PostgreSQL 15, **pas d'IP publique**
+        │ (privée) │ init Supabase + RLS
         └──────────────────┘
                  │ pg_dump quotidien (chiffré, compressé)
                  ▼
           ┌──────────────┐
-          │  Bucket S3   │  versioning + chiffrement + lifecycle 7 j
+          │ Bucket S3 │ versioning + chiffrement + lifecycle 7 j
           └──────────────┘
 
   ┌───────────────────────────────┐
-  │  VM Usine logicielle (citools) │  isolée du réseau applicatif (bonus)
-  │  Jenkins :8080 · SonarQube     │  chacun en HTTPS via sous-domaine sslip.io
-  │  :9000 · Nexus :8081           │
+  │ VM Usine logicielle (citools) │ isolée du réseau applicatif (bonus)
+  │ Jenkins :8080 · SonarQube │ chacun en HTTPS via sous-domaine sslip.io
+  │ :9000 · Nexus :8081 │
   └───────────────────────────────┘
 ```
 
@@ -82,12 +82,12 @@ applicatif n'accepte que la source = SG du LB).
 
 ### Flux réseau / Security Groups
 
-| Groupe        | Entrant autorisé                                   | Sortant |
+| Groupe | Entrant autorisé | Sortant |
 |---------------|----------------------------------------------------|---------|
-| LB            | 80, 443 depuis 0.0.0.0/0 ; 22 depuis IP admin      | tout    |
-| App           | 80 depuis SG-LB uniquement ; 22 depuis IP admin    | tout    |
-| DB            | 5432 depuis SG-App uniquement ; 22 depuis IP admin | tout    |
-| citools       | 8080/9000/8081 + 443 depuis IP admin ; 22 idem     | tout    |
+| LB | 80, 443 depuis 0.0.0.0/0 ; 22 depuis IP admin | tout |
+| App | 80 depuis SG-LB uniquement ; 22 depuis IP admin | tout |
+| DB | 5432 depuis SG-App uniquement ; 22 depuis IP admin | tout |
+| citools | 8080/9000/8081 + 443 depuis IP admin ; 22 idem | tout |
 
 Le LB **ne connaît pas** la VM DB (aucune règle entre les deux) — exigence du sujet.
 
@@ -105,7 +105,7 @@ Provisionne **exclusivement** :
 - **IAM** : rôle/instance-profile permettant à la VM DB d'écrire dans le bucket
   (pas de clé statique commitée).
 - **Security Groups** : un par rôle, règles du tableau ci-dessus.
-- **Outputs** : IP publiques/privées de chaque VM, nom du bucket → consommés pour
+- **Outputs** : IP publiques/privées de chaque VM, nom du bucket -> consommés pour
   générer l'inventaire Ansible.
 
 Contraintes :
@@ -126,16 +126,16 @@ Inventaire par groupes ; secrets via **Ansible Vault** (`group_vars/all/vault.ym
 
 ### Rôles
 
-| Rôle          | Responsabilité |
+| Rôle | Responsabilité |
 |---------------|----------------|
-| `common`      | MAJ paquets, utilisateur deploy, durcissement SSH, install Docker + plugin compose, fail2ban |
-| `loadbalancer`| Nginx reverse-proxy, upstream = VMs App, certbot Let's Encrypt (sslip.io), redirection 80→443 |
-| `app`         | Clone/copie Shaka Surf, dépose `docker-compose.yml` (sans `db`) + `.env` templé depuis Vault, `docker compose up -d`, pointe la DB vers la VM DB |
-| `database`    | Install PostgreSQL 15, applique les scripts d'init Supabase (`volumes/db/init/*.sql`), crée rôles/extensions, `pg_hba.conf` restreint au subnet App |
-| `backup`      | Script `pg_dump` chiffré + cron quotidien, upload S3 via AWS CLI (credentials par instance-profile), purge locale |
-| `jenkins`     | Install Jenkins, service démarré, accès initial sécurisé, vhost HTTPS |
-| `sonarqube`   | Install SonarQube, config de base, connectivité vérifiée, vhost HTTPS |
-| `nexus`       | Install Nexus, service démarré, repo par défaut accessible, vhost HTTPS |
+| `common` | MAJ paquets, utilisateur deploy, durcissement SSH, install Docker + plugin compose, fail2ban |
+| `loadbalancer`| Nginx reverse-proxy, upstream = VMs App, certbot Let's Encrypt (sslip.io), redirection 80->443 |
+| `app` | Clone/copie Shaka Surf, dépose `docker-compose.yml` (sans `db`) + `.env` templé depuis Vault, `docker compose up -d`, pointe la DB vers la VM DB |
+| `database` | Install PostgreSQL 15, applique les scripts d'init Supabase (`volumes/db/init/*.sql`), crée rôles/extensions, `pg_hba.conf` restreint au subnet App |
+| `backup` | Script `pg_dump` chiffré + cron quotidien, upload S3 via AWS CLI (credentials par instance-profile), purge locale |
+| `jenkins` | Install Jenkins, service démarré, accès initial sécurisé, vhost HTTPS |
+| `sonarqube` | Install SonarQube, config de base, connectivité vérifiée, vhost HTTPS |
+| `nexus` | Install Nexus, service démarré, repo par défaut accessible, vhost HTTPS |
 
 ### Playbooks
 
@@ -179,7 +179,7 @@ nœud de contrôle Linux/WSL/macOS avec Docker.
 
 - Description du projet + schéma d'architecture (machines, rôles, flux, ports).
 - Prérequis (compte AWS, Terraform, Ansible, Docker, clé SSH).
-- Déploiement de zéro, étape par étape (terraform → inventaire → ansible).
+- Déploiement de zéro, étape par étape (terraform -> inventaire -> ansible).
 - Stratégie de backup (fréquence, rétention, localisation) + justification.
 - Lancement des tests Molecule.
 - Procédure de restauration depuis S3.
@@ -191,21 +191,21 @@ shaka-surf-devops/
 ├── README.md
 ├── .gitignore
 ├── docs/
-│   ├── specs/2026-05-27-shaka-surf-devops-design.md
-│   └── architecture.md
+│ ├── specs/2026-05-27-shaka-surf-devops-design.md
+│ └── architecture.md
 ├── terraform/
-│   ├── main.tf  providers.tf  variables.tf  outputs.tf
-│   ├── network.tf  compute.tf  security.tf  s3.tf  iam.tf
-│   ├── terraform.tfvars.example
-│   └── templates/inventory.tmpl
+│ ├── main.tf providers.tf variables.tf outputs.tf
+│ ├── network.tf compute.tf security.tf s3.tf iam.tf
+│ ├── terraform.tfvars.example
+│ └── templates/inventory.tmpl
 └── ansible/
     ├── ansible.cfg
-    ├── inventory/hosts.ini   (généré)
+    ├── inventory/hosts.ini (généré)
     ├── group_vars/all/{vars.yml, vault.example.yml}
-    ├── site.yml  restore.yml
+    ├── site.yml restore.yml
     └── roles/
-        ├── common/  loadbalancer/  app/  database/  backup/
-        └── jenkins/  sonarqube/  nexus/
+        ├── common/ loadbalancer/ app/ database/ backup/
+        └── jenkins/ sonarqube/ nexus/
             └── (chacun avec tasks/, defaults/, handlers/, templates/,
                  molecule/default/{molecule.yml,converge.yml,verify.yml})
 ```

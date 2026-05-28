@@ -1,6 +1,4 @@
-# =============================================================================
 # Shaka Surf — DÉMO LOCALE COMPLÈTE
-# =============================================================================
 # Maquette 1:1, sur un seul poste, de l'architecture AWS du sujet (celle que
 # Terraform + Ansible déploient pour de vrai) :
 #
@@ -27,7 +25,6 @@
 #
 # Démarrage :  docker compose up --build -d
 # Mode d'emploi détaillé (parcours de démo pas-à-pas) : demo/README.md
-# =============================================================================
 
 name: shaka-demo
 

@@ -1,7 +1,5 @@
-# ============================================================================
 # IAM — la VM base de données écrit/lit ses backups dans S3 via un
 # instance-profile (aucune clé statique committée).
-# ============================================================================
 
 data "aws_iam_policy_document" "ec2_assume" {
   statement {

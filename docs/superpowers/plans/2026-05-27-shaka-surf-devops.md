@@ -47,7 +47,7 @@
 
 **Files:** Create: `terraform/security.tf`
 
-- [ ] SG-LB (80/443 from 0.0.0.0/0, 22 from admin_cidr), SG-App (80 from SG-LB, 22 admin), SG-DB (5432 from SG-App, 22 admin), SG-citools (8080/9000/8081/443 + 22 from admin). No LB↔DB rule.
+- [ ] SG-LB (80/443 from 0.0.0.0/0, 22 from admin_cidr), SG-App (80 from SG-LB, 22 admin), SG-DB (5432 from SG-App, 22 admin), SG-citools (8080/9000/8081/443 + 22 from admin). No LB<->DB rule.
 - [ ] Commit.
 
 ### Task 5: Terraform — S3 + IAM
@@ -104,8 +104,8 @@
 
 **Files:** Create: `ansible/roles/loadbalancer/...`, `ansible/roles/backup/...` + their `molecule/default/*`
 
-- [ ] `loadbalancer`: install Nginx, template reverse-proxy vhost (upstream = app private IPs from inventory, proxy 80→app:3000), certbot for `<lb-ip>.sslip.io`, redirect 80→443. Molecule verify: nginx active, port 80/443 listening, config test passes.
-- [ ] `backup`: deploy `/usr/local/bin/pg_backup.sh` (pg_dump | gzip | openssl enc → aws s3 cp), cron daily 02:00, local purge. Molecule verify: script present + executable, cron entry present.
+- [ ] `loadbalancer`: install Nginx, template reverse-proxy vhost (upstream = app private IPs from inventory, proxy 80->app:3000), certbot for `<lb-ip>.sslip.io`, redirect 80->443. Molecule verify: nginx active, port 80/443 listening, config test passes.
+- [ ] `backup`: deploy `/usr/local/bin/pg_backup.sh` (pg_dump | gzip | openssl enc -> aws s3 cp), cron daily 02:00, local purge. Molecule verify: script present + executable, cron entry present.
 - [ ] Commit each role.
 
 ### Task 11: Ansible — bonus citools roles (jenkins, sonarqube, nexus) + Molecule
@@ -121,7 +121,7 @@
 
 **Files:** Create: `ansible/site.yml`, `ansible/restore.yml`
 
-- [ ] `site.yml`: plays mapping groups→roles (common everywhere; database→db; app→app; loadbalancer→lb; jenkins/sonarqube/nexus→citools; backup→db).
+- [ ] `site.yml`: plays mapping groups->roles (common everywhere; database->db; app->app; loadbalancer->lb; jenkins/sonarqube/nexus->citools; backup->db).
 - [ ] `restore.yml`: independent play targeting `db` — `aws s3 ls` newest object, download, openssl decrypt, gunzip, `psql` restore. Documented.
 - [ ] Commit.
 
@@ -129,7 +129,7 @@
 
 **Files:** Modify `README.md`
 
-- [ ] Full README: project description, architecture diagram, prerequisites, step-by-step deploy (terraform → inventory → ansible-playbook), backup strategy + justification, Molecule instructions, restore procedure, security notes, repo structure.
+- [ ] Full README: project description, architecture diagram, prerequisites, step-by-step deploy (terraform -> inventory -> ansible-playbook), backup strategy + justification, Molecule instructions, restore procedure, security notes, repo structure.
 - [ ] Commit.
 
 ### Task 14: Validation, push to GitHub
@@ -144,18 +144,18 @@
 ## Self-Review
 
 **Spec coverage:**
-- §4 Terraform (network, compute, LB-as-VM, S3, IAM, SG, outputs, inventory render) → Tasks 2–6. ✓
-- §5 Ansible roles (common, loadbalancer, app, database, backup, jenkins, sonarqube, nexus) → Tasks 7–11. ✓
-- §5 playbooks site.yml + restore.yml → Task 12. ✓
-- §6 Molecule per role → embedded in Tasks 7–11. ✓
-- §7 backup strategy → Task 10 (backup role) + Task 13 (README justification). ✓
-- §8 security/secrets (gitignore, Vault, IAM, no public DB) → Tasks 1,5,7 + Task 14 secret scan. ✓
-- §9 documentation → Task 13. ✓
-- §10 structure → matches across tasks. ✓
-- §12 livrable / push → Task 14. ✓
+- §4 Terraform (network, compute, LB-as-VM, S3, IAM, SG, outputs, inventory render) -> Tasks 2–6.
+- §5 Ansible roles (common, loadbalancer, app, database, backup, jenkins, sonarqube, nexus) -> Tasks 7–11.
+- §5 playbooks site.yml + restore.yml -> Task 12.
+- §6 Molecule per role -> embedded in Tasks 7–11.
+- §7 backup strategy -> Task 10 (backup role) + Task 13 (README justification).
+- §8 security/secrets (gitignore, Vault, IAM, no public DB) -> Tasks 1,5,7 + Task 14 secret scan.
+- §9 documentation -> Task 13.
+- §10 structure -> matches across tasks.
+- §12 livrable / push -> Task 14.
 
 **Placeholder scan:** Task 9 Molecule uses a documented stand-in (compose validation) because a real multi-container Supabase stack can't boot inside a single Molecule container — this is an explicit, justified simplification, not a placeholder.
 
-**Type/name consistency:** inventory groups (loadbalancer/app/db/citools), file names, and var names are consistent across tasks. ✓
+**Type/name consistency:** inventory groups (loadbalancer/app/db/citools), file names, and var names are consistent across tasks.
 
 **Known constraint:** local Windows host lacks Terraform/Ansible/Molecule, so execution validates statically; the README documents running from a Linux/WSL/macOS control node.

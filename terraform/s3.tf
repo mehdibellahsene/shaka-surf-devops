@@ -1,8 +1,6 @@
-# ============================================================================
 # Bucket S3 — stockage des backups de la base de données.
 # Versioning + chiffrement au repos + blocage total des accès publics +
 # lifecycle de rétention (7 jours sur le préfixe postgres/).
-# ============================================================================
 
 resource "random_id" "bucket_suffix" {
   byte_length = 4

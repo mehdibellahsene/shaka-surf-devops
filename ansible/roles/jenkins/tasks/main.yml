@@ -11,7 +11,7 @@
 # Le dépôt debian-stable de Jenkins est signé par la clé 7198F4B714ABFC68.
 # On l'importe depuis le serveur de clés puis on l'exporte en trousseau binaire
 # (format attendu par apt via signed-by). Plus robuste que le fichier .key publié,
-# qui peut ne plus correspondre à la signature courante du dépôt (→ NO_PUBKEY).
+# qui peut ne plus correspondre à la signature courante du dépôt (-> NO_PUBKEY).
 - name: Importer la clé de signature du dépôt Jenkins
   ansible.builtin.shell: |
     set -euo pipefail

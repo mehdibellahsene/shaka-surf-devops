@@ -38,9 +38,7 @@ output "backup_bucket" {
   value       = aws_s3_bucket.backups.bucket
 }
 
-# ============================================================================
 # Génération de l'inventaire Ansible depuis les outputs ci-dessus.
-# ============================================================================
 resource "local_file" "ansible_inventory" {
   filename = "${path.module}/../ansible/inventory/hosts.ini"
   content = templatefile("${path.module}/templates/inventory.tmpl", {
