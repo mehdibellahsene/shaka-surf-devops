@@ -1,4 +1,4 @@
-# Shaka Surf — Infrastructure DevOps 🏄
+# Shaka Surf — Infrastructure DevOps
 
 Infrastructure **complète, automatisée et reproductible** : **Terraform**
 (provisionnement AWS), **Ansible** (configuration par rôles, inventaire généré)
@@ -14,7 +14,7 @@ versionné dans ce dépôt (`app/`).
 
 ---
 
-## 🚀 Tester en 2 minutes (démo locale, sans AWS)
+## Tester en 2 minutes (démo locale, sans AWS)
 
 La démo locale reproduit **1:1 l'architecture AWS** sur votre poste : les
 réseaux Docker jouent le rôle des Security Groups, MinIO celui du bucket S3.
@@ -42,7 +42,7 @@ démarrage : acceptez l'avertissement du navigateur).
 > Les mots de passe (`demo`, `demodemo123`…) sont volontairement évidents :
 > **démo locale uniquement**. En production, les secrets passent par Ansible Vault.
 
-Correspondance démo ↔ AWS détaillée : [`docs/architecture.md`](docs/architecture.md).
+Correspondance démo <-> AWS détaillée : [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
@@ -50,14 +50,14 @@ Correspondance démo ↔ AWS détaillée : [`docs/architecture.md`](docs/archite
 
 ```mermaid
 flowchart TD
-    NET(["🌐 Internet"]) -->|"HTTPS 443 · Let's Encrypt · ip-lb.sslip.io"| LB["VM Load Balancer — Nginx<br/>point d'entrée unique · terminaison TLS · round-robin"]
+    NET(["Internet"]) -->|"HTTPS 443 · Let's Encrypt · ip-lb.sslip.io"| LB["VM Load Balancer — Nginx<br/>point d'entrée unique · terminaison TLS · round-robin"]
     LB -->|"HTTP 80"| A1["VM App 1<br/>docker compose : web (nginx) + api (Node/Express)"]
     LB -->|"HTTP 80"| A2["VM App N ≥ 2<br/>docker compose : web (nginx) + api (Node/Express)"]
     A1 -->|"PostgreSQL 5432"| DB[("VM Base de données<br/>PostgreSQL 15 · non exposée à Internet")]
     A2 -->|"PostgreSQL 5432"| DB
     DB -->|"pg_dump quotidien chiffré"| S3[("Bucket S3<br/>backups · versioning + lifecycle 7 j")]
     CI["VM Usine logicielle — citools (bonus)<br/>Jenkins 8080 · SonarQube 9000 · Nexus 8081"]
-    NOTE["🔒 Aucune route réseau Load Balancer → Base de données"]
+    NOTE["Aucune route réseau Load Balancer -> Base de données"]
     classDef db fill:#fdebec,stroke:#a23,color:#7a1f24;
     classDef store fill:#fff6e6,stroke:#a8740d,color:#6b4a08;
     classDef ci fill:#eef3fb,stroke:#34557a,color:#23364d;
@@ -69,7 +69,7 @@ flowchart TD
 ```
 
 Détails (machines, rôles, flux réseau, ports, Security Groups, correspondance
-démo locale ↔ AWS) : [`docs/architecture.md`](docs/architecture.md).
+démo locale <-> AWS) : [`docs/architecture.md`](docs/architecture.md).
 Conception initiale (document historique, antérieur au mock) : [`docs/specs/`](docs/specs/).
 
 ---
@@ -84,7 +84,7 @@ Chaque VM applicative exécute **deux conteneurs** via `docker compose`
 - **`api`** — API Node 20 (Express + pg) sur le port 9940, connectée à la VM
   PostgreSQL (`app/backend/`).
 
-Le schéma et le jeu de données (6 spots de surf français 🌊) sont dans
+Le schéma et le jeu de données (6 spots de surf français ) sont dans
 `app/db/init.sql`, **idempotent** (rejouable sans effet de bord).
 
 | Endpoint | Méthode | Description |
@@ -108,13 +108,24 @@ en cas de panne de la base.
 ### Pré-requis (poste de contrôle)
 
 Linux, WSL ou macOS (Ansible ne tourne pas nativement sous Windows) :
-Terraform ≥ 1.5, Ansible ≥ 2.15, Molecule + Docker, AWS CLI v2, des
-credentials AWS configurés et une paire de clés SSH EC2.
+Terraform ≥ 1.5, Ansible ≥ 2.15, Molecule + Docker, AWS CLI v2 et une paire de
+clés SSH EC2.
+
+Les credentials AWS sont fournis par variables d'environnement (Terraform et
+l'AWS CLI les lisent automatiquement) :
 
 ```bash
+cp .env.example .env          # puis renseigner vos clés IAM
+set -a; source .env; set +a   # charge AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
+
 cd ansible
 ansible-galaxy collection install -r requirements.yml
 ```
+
+> Les types d'instances par défaut sont `t3.micro` (éligibles au *free tier*),
+> suffisants pour provisionner et valider toute l'infrastructure. Sur un compte
+> sans restriction, augmentez `instance_type_citools` (SonarQube/Nexus exigent
+> ≥ `t3.medium`) dans `terraform.tfvars`.
 
 ### Étape 1 — Provisionner l'infrastructure (Terraform)
 
@@ -142,9 +153,9 @@ Récupérer l'URL publique : `terraform output lb_url`.
 cd ../ansible
 cp vault.example.yml group_vars/all/vault.yml
 # Renseigner de vraies valeurs :
-#   vault_postgres_password        — mot de passe PostgreSQL de l'application
-#   vault_postgres_admin_password  — mot de passe du superutilisateur postgres
-#   vault_backup_passphrase        — passphrase de chiffrement des backups
+# vault_postgres_password — mot de passe PostgreSQL de l'application
+# vault_postgres_admin_password — mot de passe du superutilisateur postgres
+# vault_backup_passphrase — passphrase de chiffrement des backups
 ansible-vault encrypt group_vars/all/vault.yml
 ```
 
@@ -206,14 +217,14 @@ done
 
 ## 5. Stratégie de backup
 
-| Paramètre     | Valeur | Justification |
+| Paramètre | Valeur | Justification |
 |---------------|--------|---------------|
-| **Quoi**      | `pg_dump` de la base `shakasurf` | Dump logique portable (schéma + données), restaurable sur n'importe quelle instance PostgreSQL 15. |
-| **Quand**     | Quotidien à 02:00 (cron) | Trafic faible la nuit ; RPO ≤ 24 h, suffisant pour une application de réservation au volume modéré, sans surcoût de stockage/CPU. |
+| **Quoi** | `pg_dump` de la base `shakasurf` | Dump logique portable (schéma + données), restaurable sur n'importe quelle instance PostgreSQL 15. |
+| **Quand** | Quotidien à 02:00 (cron) | Trafic faible la nuit ; RPO ≤ 24 h, suffisant pour une application de réservation au volume modéré, sans surcoût de stockage/CPU. |
 | **Traitement**| gzip + chiffrement AES-256 (openssl, passphrase Vault) | Compression pour réduire le coût S3 ; chiffrement pour la confidentialité au transit et au repos. |
-| **Où**        | `s3://<bucket>/postgres/shakasurf_AAAA-MM-JJ_HHMMSS.sql.gz.enc` | Bucket dédié, versioning + SSE activés, accès public bloqué. |
+| **Où** | `s3://<bucket>/postgres/shakasurf_AAAA-MM-JJ_HHMMSS.sql.gz.enc` | Bucket dédié, versioning + SSE activés, accès public bloqué. |
 | **Rétention** | 7 sauvegardes quotidiennes (lifecycle S3) | Couvre une semaine de récupération ; au-delà, suppression automatique pour maîtriser les coûts. Purge locale immédiate après upload. |
-| **Accès S3**  | Instance-profile IAM (VM DB) | Aucune clé statique : permissions limitées au préfixe `postgres/` du seul bucket. |
+| **Accès S3** | Instance-profile IAM (VM DB) | Aucune clé statique : permissions limitées au préfixe `postgres/` du seul bucket. |
 
 Le script de backup est déployé en `/usr/local/bin/pg_backup.sh` par le rôle
 `backup`. La **démo locale embarque exactement le même mécanisme** : le
@@ -243,8 +254,8 @@ Sous le capot, il exécute `/usr/local/bin/pg_restore.sh` qui :
 ### En démo locale
 
 ```bash
-docker compose exec backup backup    # déclenche un backup immédiat
-docker compose exec backup restore   # restaure le dump le plus récent depuis MinIO
+docker compose exec backup backup # déclenche un backup immédiat
+docker compose exec backup restore # restaure le dump le plus récent depuis MinIO
 ```
 
 ---
@@ -269,7 +280,7 @@ docker compose exec backup restore   # restaure le dump le plus récent depuis M
 
 ---
 
-## 8. ✅ Conformité à la consigne
+## 8. Conformité à la consigne
 
 | # | Exigence du sujet | Où c'est réalisé dans le dépôt |
 |---|-------------------|--------------------------------|
@@ -303,34 +314,34 @@ docker compose exec backup restore   # restaure le dump le plus récent depuis M
 shaka-surf-devops/
 ├── README.md
 ├── .gitignore
-├── docker-compose.yml             # démo locale complète : lb + app1/app2 + db + MinIO + backup
-├── app/                           # application mock (versionnée dans le dépôt)
-│   ├── backend/                   # API Node 20 — Express + pg (Dockerfile)
-│   ├── frontend/                  # frontend statique vanilla servi par nginx (Dockerfile)
-│   ├── db/init.sql                # schéma + seed idempotents (6 spots 🌊)
-│   └── docker-compose.yml         # compose PAR VM applicative (utilisé par Ansible)
-├── demo/                          # briques propres à la démo locale
-│   ├── lb/                        # nginx + certificat auto-signé (≙ VM Load Balancer)
-│   └── backup/                    # cron + scripts backup/restore vers MinIO (≙ cron de la VM DB)
+├── docker-compose.yml # démo locale complète : lb + app1/app2 + db + MinIO + backup
+├── app/ # application mock (versionnée dans le dépôt)
+│ ├── backend/ # API Node 20 — Express + pg (Dockerfile)
+│ ├── frontend/ # frontend statique vanilla servi par nginx (Dockerfile)
+│ ├── db/init.sql # schéma + seed idempotents (6 spots )
+│ └── docker-compose.yml # compose PAR VM applicative (utilisé par Ansible)
+├── demo/ # briques propres à la démo locale
+│ ├── lb/ # nginx + certificat auto-signé (≙ VM Load Balancer)
+│ └── backup/ # cron + scripts backup/restore vers MinIO (≙ cron de la VM DB)
 ├── docs/
-│   ├── architecture.md            # schéma, rôles, flux réseau, démo ↔ AWS
-│   └── specs/                     # conception détaillée
-├── terraform/                     # provisionnement AWS (IaC)
-│   ├── providers.tf  variables.tf  outputs.tf
-│   ├── network.tf  security.tf  compute.tf  s3.tf  iam.tf
-│   ├── terraform.tfvars.example
-│   └── templates/inventory.tmpl   # génère l'inventaire Ansible
+│ ├── architecture.md # schéma, rôles, flux réseau, démo <-> AWS
+│ └── specs/ # conception détaillée
+├── terraform/ # provisionnement AWS (IaC)
+│ ├── providers.tf variables.tf outputs.tf
+│ ├── network.tf security.tf compute.tf s3.tf iam.tf
+│ ├── terraform.tfvars.example
+│ └── templates/inventory.tmpl # génère l'inventaire Ansible
 └── ansible/
-    ├── ansible.cfg  requirements.yml
-    ├── vault.example.yml          # modèle de coffre (hors group_vars : non auto-chargé)
-    ├── inventory/hosts.ini        # généré par Terraform (gitignoré)
-    ├── group_vars/all/vars.yml    # (+ vault.yml chiffré, gitignoré)
-    ├── site.yml  restore.yml
+    ├── ansible.cfg requirements.yml
+    ├── vault.example.yml # modèle de coffre (hors group_vars : non auto-chargé)
+    ├── inventory/hosts.ini # généré par Terraform (gitignoré)
+    ├── group_vars/all/vars.yml # (+ vault.yml chiffré, gitignoré)
+    ├── site.yml restore.yml
     └── roles/
         ├── common/ database/ app/ loadbalancer/ backup/
-        └── jenkins/ sonarqube/ nexus/   (bonus — usine logicielle)
+        └── jenkins/ sonarqube/ nexus/ (bonus — usine logicielle)
             # chaque rôle : tasks/ defaults/ handlers/ templates/
-            #               molecule/default/{molecule,converge,verify}.yml
+            # molecule/default/{molecule,converge,verify}.yml
 ```
 
 ---
