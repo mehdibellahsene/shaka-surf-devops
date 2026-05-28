@@ -34,27 +34,27 @@ variable "vpc_cidr" {
 }
 
 variable "instance_type_lb" {
-  description = "Type d'instance pour le load balancer."
+  description = "Type d'instance pour le load balancer (t3.micro : eligible free tier)."
   type        = string
-  default     = "t3.small"
+  default     = "t3.micro"
 }
 
 variable "instance_type_app" {
-  description = "Type d'instance pour les VMs applicatives."
+  description = "Type d'instance pour les VMs applicatives (t3.micro : eligible free tier)."
   type        = string
-  default     = "t3.medium"
+  default     = "t3.micro"
 }
 
 variable "instance_type_db" {
-  description = "Type d'instance pour la base de données."
+  description = "Type d'instance pour la base de donnees (t3.micro : eligible free tier)."
   type        = string
-  default     = "t3.medium"
+  default     = "t3.micro"
 }
 
 variable "instance_type_citools" {
-  description = "Type d'instance pour l'usine logicielle (SonarQube/Nexus sont gourmands)."
+  description = "Type d'instance pour l'usine logicielle. SonarQube/Nexus exigent >= t3.medium (hors free tier) ; t3.micro suffit a provisionner la VM."
   type        = string
-  default     = "t3.large"
+  default     = "t3.micro"
 }
 
 variable "ssh_key_name" {

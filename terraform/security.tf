@@ -1,7 +1,5 @@
-# ============================================================================
 # Security Groups — une politique par type de machine.
 # Principe : surface minimale. Le LB ne peut PAS joindre la base de données.
-# ============================================================================
 
 # ---- Load balancer : seul point d'entrée Internet (80/443) ----
 resource "aws_security_group" "lb" {
@@ -125,7 +123,7 @@ resource "aws_security_group" "citools" {
   ingress {
     # Nécessaire au seul challenge ACME HTTP-01 de Let's Encrypt (les serveurs
     # de validation arrivent depuis Internet) ; les vhosts redirigent vers 443.
-    description = "HTTP (challenge ACME Let's Encrypt)"
+    description = "HTTP challenge ACME Lets Encrypt"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"

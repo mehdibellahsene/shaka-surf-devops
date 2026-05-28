@@ -1,8 +1,8 @@
-# Copier en terraform.tfvars (gitignoré) puis adapter.
-# Aucune valeur secrète ici : seuls des identifiants de ressources.
+# Copier en terraform.tfvars (gitignore) puis adapter.
+# Aucune valeur secrete ici : seuls des identifiants de ressources.
 
-region   = "eu-west-3"
-project  = "shaka-surf"
+region  = "eu-west-3"
+project = "shaka-surf"
 
 # Nombre de VMs applicatives (>= 2)
 app_count = 2
@@ -10,11 +10,19 @@ app_count = 2
 # Provisionner l'usine logicielle (bonus) ?
 enable_citools = true
 
-# Paire de clés EC2 EXISTANTE dans la région ci-dessus.
+# Paire de cles EC2 EXISTANTE dans la region ci-dessus.
 ssh_key_name = "ma-cle-ec2"
 
-# Optionnel : créer la paire de clés depuis une clé publique locale.
+# Optionnel : creer la paire de cles depuis une cle publique locale.
 # ssh_public_key_path = "~/.ssh/id_ed25519.pub"
 
-# IMPORTANT : restreindre l'accès SSH à votre IP publique (https://ifconfig.me) en /32.
+# IMPORTANT : restreindre l'acces SSH a votre IP publique (https://ifconfig.me) en /32.
 admin_cidr = "203.0.113.10/32"
+
+# Types d'instances. Les defauts (t3.micro) sont eligibles au free tier et
+# suffisent pour valider tout le provisionnement. Sur un compte sans restriction
+# free tier, augmenter pour l'usine logicielle (SonarQube/Nexus exigent >= t3.medium).
+# instance_type_lb      = "t3.micro"
+# instance_type_app     = "t3.micro"
+# instance_type_db      = "t3.micro"
+# instance_type_citools = "t3.medium"
